@@ -1,20 +1,44 @@
-// CONFIGURATION
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwLBvnrlj8eTfp3NbXoIFxWfvs4BNC_L0YZbez87IMn9ZH5p78qLEPRVGLwI0l3M9MY/exec";
 
 let db, mediaRecorder, chunks = [], finalTranscript = "", currentEntryId = null;
 let audioCtx, analyser, dataArray, animId;
 
-// 1. DATABASE INITIALIZATION
-const request = indexedDB.open("BABRN_Universal_DB", 2);
+// 1. DATABASE INIT
+const request = indexedDB.open("BABRN_Turbo_DB", 3);
 request.onupgradeneeded = e => e.target.result.createObjectStore("sessions", { keyPath: "id" });
 request.onsuccess = e => { db = e.target.result; loadLibrary(); };
 
-// 2. AUDIO VISUALIZER
+// 2. TURBO SPEECH RECOGNITION (Optimized for Speed)
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognition = new SpeechRecognition();
+
+recognition.continuous = true;
+recognition.interimResults = true; // Shows words while you are still speaking
+recognition.lang = 'en-US'; // Use 'fil-PH' for Tagalog
+
+recognition.onresult = (e) => {
+    let interimTranscript = "";
+    for (let i = e.resultIndex; i < e.results.length; ++i) {
+        let transcript = e.results[i][0].transcript;
+        if (e.results[i].isFinal) {
+            finalTranscript += transcript + " ";
+        } else {
+            interimTranscript += transcript;
+        }
+    }
+    // Update the textarea with both finalized and "thinking" text
+    const output = document.getElementById('output');
+    output.value = finalTranscript + interimTranscript;
+    output.scrollTop = output.scrollHeight; // Auto-scroll
+};
+
+// 3. ENHANCED VISUALIZER (Signal Strength Detection)
+
 function startVisualizer(stream) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const source = audioCtx.createMediaStreamSource(stream);
     analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 64;
+    analyser.fftSize = 64; 
     source.connect(analyser);
     dataArray = new Uint8Array(analyser.frequencyBinCount);
     
@@ -25,33 +49,28 @@ function startVisualizer(stream) {
         animId = requestAnimationFrame(draw);
         analyser.getByteFrequencyData(dataArray);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
         let x = 0;
         const barWidth = canvas.width / dataArray.length;
+        
+        // Calculate average volume for signal indicator
+        let sum = 0;
+        for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
+        let average = sum / dataArray.length;
+
         for (let i = 0; i < dataArray.length; i++) {
             const h = (dataArray[i] / 255) * canvas.height;
-            ctx.fillStyle = '#10b981';
+            
+            // Color Logic: Red if too quiet, Green if good
+            if (average < 15) ctx.fillStyle = '#ef4444'; // Red (Too quiet)
+            else ctx.fillStyle = '#10b981'; // Green (Good signal)
+            
             ctx.fillRect(x, canvas.height - h, barWidth - 2, h);
             x += barWidth;
         }
     }
     draw();
 }
-
-// 3. SPEECH RECOGNITION
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const recognition = new SpeechRecognition();
-recognition.continuous = true;
-recognition.interimResults = true;
-recognition.lang = 'en-US'; // Change to 'fil-PH' for Tagalog
-
-recognition.onresult = (e) => {
-    let interim = "";
-    for (let i = e.resultIndex; i < e.results.length; ++i) {
-        if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript + " ";
-        else interim += e.results[i][0].transcript;
-    }
-    document.getElementById('output').value = finalTranscript + interim;
-};
 
 // 4. RECORDING CONTROLS
 document.getElementById('start-btn').onclick = async () => {
@@ -63,17 +82,18 @@ document.getElementById('start-btn').onclick = async () => {
         mediaRecorder.ondataavailable = e => chunks.push(e.data);
         mediaRecorder.onstop = () => {
             const blob = new Blob(chunks, { type: 'audio/webm' });
-            saveToLocal(blob);
+            saveLocal(blob);
             stream.getTracks().forEach(t => t.stop());
             cancelAnimationFrame(animId);
             audioCtx.close();
         };
         mediaRecorder.start();
         recognition.start();
+        
         document.getElementById('start-btn').classList.add('hidden');
         document.getElementById('stop-btn').classList.remove('hidden');
         document.getElementById('recording-indicator').classList.remove('hidden');
-    } catch (err) { alert("Mic access denied"); }
+    } catch (err) { alert("Microphone not detected or permission denied."); }
 };
 
 document.getElementById('stop-btn').onclick = () => {
@@ -84,70 +104,64 @@ document.getElementById('stop-btn').onclick = () => {
     document.getElementById('recording-indicator').classList.add('hidden');
 };
 
-// 5. STORAGE & SYNC FUNCTIONS
-function saveToLocal(blob) {
+// 5. DATA MANAGEMENT (Local & Cloud)
+function saveLocal(blob) {
     const id = Date.now();
-    const title = document.getElementById('session-title').value || "Untitled Meeting";
+    const title = document.getElementById('session-title').value || "Meeting " + new Date().toLocaleTimeString();
     const text = document.getElementById('output').value;
     const tx = db.transaction("sessions", "readwrite");
     tx.objectStore("sessions").add({ id, title, text, date: new Date().toLocaleString(), blob });
     currentEntryId = id;
-    document.getElementById('save-status').innerText = "✓ Saved Local";
+    document.getElementById('save-status').innerText = "✓ ARCHIVED LOCALLY";
 }
 
 async function syncToGoogleSheets() {
     const title = document.getElementById('session-title').value;
     const text = document.getElementById('output').value;
-    const btn = document.getElementById('cloud-sync-btn');
-    if(!title) return alert("Title is required");
+    if(!text) return alert("Nothing to sync!");
 
+    const btn = document.getElementById('cloud-sync-btn');
     btn.innerHTML = `<i class="fas fa-spinner animate-spin"></i> SYNCING...`;
+    
     try {
         await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
             body: JSON.stringify({ title, text, date: new Date().toLocaleString() })
         });
-        alert("Synced to Google Sheets!");
-    } catch (err) { alert("Sync Error"); }
+        alert("Success! Data sent to Google Sheets.");
+    } catch (e) { alert("Cloud Sync Failed"); }
     btn.innerHTML = `<i class="fas fa-cloud-upload-alt mr-1"></i> Sync to Google Sheets`;
 }
 
+// 6. ARCHIVE & SEARCH LOGIC
 function loadLibrary() {
     const list = document.getElementById('library-list');
     const query = document.getElementById('library-search').value.toLowerCase();
     list.innerHTML = "";
-    let count = 0;
-
+    
     db.transaction("sessions", "readonly").objectStore("sessions").openCursor(null, 'prev').onsuccess = (e) => {
         const cursor = e.target.result;
         if (cursor) {
             const doc = cursor.value;
             if (doc.title.toLowerCase().includes(query) || doc.text.toLowerCase().includes(query)) {
-                count++;
                 const div = document.createElement('div');
-                div.className = "bg-white p-6 rounded-2xl border border-slate-200 shadow-sm";
+                div.className = "bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative group";
                 div.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-[10px] font-bold text-emerald-600 uppercase">${doc.date}</span>
-                        <button onclick="deleteEntry(${doc.id})" class="text-slate-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
-                    </div>
-                    <h3 class="text-sm font-bold text-slate-800 mb-4 uppercase truncate">${doc.title}</h3>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="openEditor(${doc.id})" class="bg-slate-800 text-white text-[10px] font-bold py-2 rounded-lg">LOAD</button>
-                        <button onclick="syncSingle(${doc.id})" class="bg-blue-600 text-white text-[10px] font-bold py-2 rounded-lg">SYNC</button>
-                    </div>
+                    <button onclick="deleteEntry(${doc.id})" class="absolute top-4 right-4 text-slate-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                    <h3 class="font-bold text-slate-800 text-sm truncate pr-6">${doc.title}</h3>
+                    <p class="text-[10px] text-slate-400 mb-4">${doc.date}</p>
+                    <button onclick="openEditor(${doc.id})" class="w-full bg-slate-100 py-2 rounded-lg text-[10px] font-bold uppercase hover:bg-emerald-500 hover:text-white transition-all">Open Session</button>
                 `;
                 list.appendChild(div);
             }
             cursor.continue();
         }
-        document.getElementById('empty-msg').style.display = count === 0 ? 'block' : 'none';
     };
 }
 
 function deleteEntry(id) {
-    if(confirm("Delete this archive?")) {
+    if(confirm("Permanently delete this archive?")) {
         db.transaction("sessions", "readwrite").objectStore("sessions").delete(id);
         setTimeout(loadLibrary, 100);
     }
@@ -160,21 +174,16 @@ function openEditor(id) {
         document.getElementById('session-title').value = doc.title;
         finalTranscript = doc.text;
         currentEntryId = doc.id;
-        if(doc.blob) document.getElementById('review-player').src = URL.createObjectURL(doc.blob);
         switchTab('recorder');
     };
 }
 
-// 6. UTILS
 function switchTab(tab) {
     document.getElementById('view-recorder').classList.toggle('hidden', tab !== 'recorder');
     document.getElementById('view-library').classList.toggle('hidden', tab !== 'library');
-    document.getElementById('tab-recorder').className = tab === 'recorder' ? 'py-5 active-tab uppercase text-xs font-bold' : 'py-5 uppercase text-xs font-bold text-slate-400';
-    document.getElementById('tab-library').className = tab === 'library' ? 'py-5 active-tab uppercase text-xs font-bold' : 'py-5 uppercase text-xs font-bold text-slate-400';
     if(tab === 'library') loadLibrary();
 }
 
 function insertTimestamp() {
-    const out = document.getElementById('output');
-    out.value += `\n[${new Date().toLocaleTimeString()}] `;
+    document.getElementById('output').value += `\n[${new Date().toLocaleTimeString()}] `;
 }
