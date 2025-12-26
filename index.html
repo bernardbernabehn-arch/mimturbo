@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BABRN - Ultimate Sync</title>
+    <title>BABRN - Final Master Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -22,7 +22,7 @@
         <header class="no-print bg-[#002b5c] p-6 rounded-t-3xl text-white flex justify-between items-center shadow-lg">
             <div>
                 <h1 class="text-2xl font-bold uppercase tracking-tighter text-emerald-400">B.A.B.R.N. Turbo</h1>
-                <p class="text-[10px] opacity-70 uppercase tracking-widest text-slate-300">Taglish Capture & Quick Clipboard Sync</p>
+                <p class="text-[10px] opacity-70 uppercase tracking-widest text-slate-300">Fast Taglish + Audio + Cloud Sync</p>
             </div>
             <div id="recording-indicator" class="hidden flex items-center bg-red-600 px-4 py-2 rounded-full text-xs font-bold animate-pulse">
                 <span class="w-2 h-2 bg-white rounded-full mr-2"></span> LIVE
@@ -68,9 +68,9 @@
                 <div class="lg:col-span-3">
                     <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                            <div><label class="text-[9px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Title</label><input type="text" id="session-title" placeholder="ENTER TITLE..." class="header-field text-lg"></div>
-                            <div><label class="text-[9px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Department</label><input type="text" id="session-dept" placeholder="DEPT..." class="header-field text-lg"></div>
-                            <div><label class="text-[9px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Date</label><input type="date" id="session-date-picker" class="header-field text-lg"></div>
+                            <div><label class="text-[9px] font-bold text-slate-400 uppercase ml-1 block mb-1">Title</label><input type="text" id="session-title" placeholder="ENTER TITLE..." class="header-field text-lg"></div>
+                            <div><label class="text-[9px] font-bold text-slate-400 uppercase ml-1 block mb-1">Department</label><input type="text" id="session-dept" placeholder="DEPT..." class="header-field text-lg"></div>
+                            <div><label class="text-[9px] font-bold text-slate-400 uppercase ml-1 block mb-1">Date</label><input type="date" id="session-date-picker" class="header-field text-lg"></div>
                         </div>
 
                         <div class="no-print flex justify-between items-center mb-4">
@@ -100,13 +100,17 @@
     </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwLBvnrlj8eTfp3NbXoIFxWfvs4BNC_L0YZbez87IMn9ZH5p78qLEPRVGLwI0l3M9MY/exec";
+        // YOUR UNIQUE SCRIPT URL
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby7PX1xvCdHS1flLEwPJcNtTdWr_qvDN6y2pCTAllBG_8OY5GrkEPxbtxRx7ZD_Tv91/exec";
+        
         let db, mediaRecorder, chunks = [], finalTranscript = "", currentEntryId = null;
 
-        const request = indexedDB.open("BABRN_Turbo_Copy_DB", 3);
+        // DB SETUP
+        const request = indexedDB.open("BABRN_Final_DB", 3);
         request.onupgradeneeded = e => { e.target.result.createObjectStore("sessions", { keyPath: "id" }); };
         request.onsuccess = e => { db = e.target.result; document.getElementById('session-date-picker').valueAsDate = new Date(); loadLibrary(); };
 
+        // SPEECH RECOGNITION
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
@@ -123,6 +127,7 @@
             document.getElementById('output').scrollTop = document.getElementById('output').scrollHeight;
         };
 
+        // RECORDING LOGIC
         document.getElementById('start-btn').onclick = async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -139,7 +144,7 @@
                 document.getElementById('start-btn').classList.add('hidden');
                 document.getElementById('stop-btn').classList.remove('hidden');
                 document.getElementById('recording-indicator').classList.remove('hidden');
-            } catch(err) { alert("Mic Error."); }
+            } catch(err) { alert("Mic Error. Ensure HTTPS is used."); }
         };
 
         document.getElementById('stop-btn').onclick = () => {
@@ -150,23 +155,7 @@
             document.getElementById('recording-indicator').classList.add('hidden');
         };
 
-        function copyAllText() {
-            const text = document.getElementById('output').value;
-            navigator.clipboard.writeText(text).then(() => {
-                const btn = event.currentTarget;
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                setTimeout(() => btn.innerHTML = originalText, 2000);
-            });
-        }
-
-        function quickCopy(id) {
-            db.transaction("sessions", "readonly").objectStore("sessions").get(id).onsuccess = (e) => {
-                navigator.clipboard.writeText(e.target.result.text);
-                alert("Transcription copied to clipboard!");
-            };
-        }
-
+        // SAVE & UPDATE
         function saveToLocal(audioBlob) {
             const id = Date.now();
             const payload = {
@@ -201,6 +190,12 @@
             };
         }
 
+        // UTILITIES
+        function copyAllText() {
+            const text = document.getElementById('output').value;
+            navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!"));
+        }
+
         function loadAudioPlayer(blob) {
             if(!blob) return;
             const url = URL.createObjectURL(blob);
@@ -223,12 +218,11 @@
                         const div = document.createElement('div');
                         div.className = "bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative";
                         div.innerHTML = `
-                            <button onclick="quickCopy(${cursor.value.id})" class="absolute top-4 right-4 text-slate-300 hover:text-blue-500" title="Copy Text"><i class="fas fa-copy"></i></button>
                             <div class="mb-2"><span class="text-[8px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold uppercase">${cursor.value.dept}</span></div>
-                            <h3 class="font-bold uppercase text-xs truncate pr-6">${cursor.value.title}</h3>
+                            <h3 class="font-bold uppercase text-xs truncate">${cursor.value.title}</h3>
                             <p class="text-[9px] text-slate-400 mb-4">Date: ${cursor.value.sessionDate}</p>
                             <div class="flex gap-2">
-                                <button onclick="openEntry(${cursor.value.id})" class="flex-1 bg-slate-800 text-white py-2 rounded-lg text-[10px] font-bold">OPEN</button>
+                                <button onclick="openEntry(${cursor.value.id})" class="flex-1 bg-slate-800 text-white py-2 rounded-lg text-[10px] font-bold hover:bg-emerald-500">OPEN</button>
                                 <button onclick="deleteEntry(${cursor.value.id})" class="text-slate-300 hover:text-red-500 px-2"><i class="fas fa-trash"></i></button>
                             </div>`;
                         list.appendChild(div);
@@ -268,17 +262,41 @@
             }
         }
 
-        async function syncToGoogle() {
-            const payload = { title: document.getElementById('session-title').value, department: document.getElementById('session-dept').value, sessionDate: document.getElementById('session-date-picker').value, text: document.getElementById('output').value };
-            try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }); alert("Synced!"); } catch(e) { alert("Fail"); }
-        }
-
         function insertTimestamp() { const out = document.getElementById('output'); out.value += `\n[${new Date().toLocaleTimeString()}] `; finalTranscript = out.value; }
 
         function switchTab(tab) {
             document.getElementById('view-recorder').classList.toggle('hidden', tab !== 'recorder');
             document.getElementById('view-library').classList.toggle('hidden', tab !== 'library');
             if(tab === 'library') loadLibrary();
+        }
+
+        // CLOUD SYNC
+        async function syncToGoogle() {
+            const payload = {
+                title: document.getElementById('session-title').value || "No Title",
+                department: document.getElementById('session-dept').value || "No Dept",
+                sessionDate: document.getElementById('session-date-picker').value,
+                text: document.getElementById('output').value
+            };
+            
+            const btn = document.getElementById('cloud-btn');
+            btn.innerText = "SYNCING...";
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors', 
+                cache: 'no-cache',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(() => {
+                alert("Cloud Sync Successful!");
+                btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Sync Cloud';
+            })
+            .catch(e => {
+                alert("Sync Error. Check console.");
+                btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Sync Cloud';
+            });
         }
     </script>
 </body>
