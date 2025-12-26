@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BABRN - Replay & Edit Pro</title>
+    <title>BABRN - Ultimate Sync</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -11,8 +11,7 @@
         body { font-family: 'Inter', sans-serif; background: #f1f5f9; color: #1e293b; }
         .medical-canvas { font-family: 'Roboto Mono', monospace; background: white; line-height: 1.8; }
         .active-tab { border-bottom: 4px solid #10b981; color: #10b981; font-weight: bold; }
-        #volume-bar { height: 100%; width: 0%; background: #10b981; transition: width 0.05s linear; }
-        .title-input-header { font-size: 1.5rem; font-weight: 800; border: none; background: #fefce8; padding: 15px; width: 100%; border-radius: 12px; border-left: 6px solid #eab308; outline: none; }
+        .header-field { border: none; background: #fefce8; padding: 12px; border-radius: 8px; border-left: 4px solid #eab308; outline: none; font-size: 0.85rem; font-weight: 700; width: 100%; }
         audio::-webkit-media-controls-panel { background-color: #f1f5f9; }
         @media print { .no-print { display: none !important; } }
     </style>
@@ -23,10 +22,10 @@
         <header class="no-print bg-[#002b5c] p-6 rounded-t-3xl text-white flex justify-between items-center shadow-lg">
             <div>
                 <h1 class="text-2xl font-bold uppercase tracking-tighter text-emerald-400">B.A.B.R.N. Turbo</h1>
-                <p class="text-[10px] opacity-70 uppercase tracking-widest text-slate-300">Audio Replay + Text Sync Editor</p>
+                <p class="text-[10px] opacity-70 uppercase tracking-widest text-slate-300">Taglish Capture & Quick Clipboard Sync</p>
             </div>
             <div id="recording-indicator" class="hidden flex items-center bg-red-600 px-4 py-2 rounded-full text-xs font-bold animate-pulse">
-                <span class="w-2 h-2 bg-white rounded-full mr-2"></span> MIC LIVE
+                <span class="w-2 h-2 bg-white rounded-full mr-2"></span> LIVE
             </div>
         </header>
 
@@ -52,40 +51,47 @@
                             <audio id="audio-player" controls class="w-full h-8"></audio>
                         </div>
 
-                        <div class="mt-4 pt-4 border-t">
-                            <button onclick="updateExistingEntry()" id="update-btn" class="hidden w-full bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl text-[10px] font-bold uppercase mb-2">
-                                <i class="fas fa-save mr-1"></i> Save Edits to Local
+                        <div class="mt-4 pt-4 border-t space-y-2">
+                            <button onclick="copyAllText()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-2">
+                                <i class="fas fa-copy"></i> Copy All Text
+                            </button>
+                            <button onclick="updateExistingEntry()" id="update-btn" class="hidden w-full bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl text-[10px] font-bold uppercase">
+                                <i class="fas fa-save mr-1"></i> Update Archive
                             </button>
                             <button onclick="syncToGoogle()" id="cloud-btn" class="w-full bg-blue-500 text-white py-3 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-2">
                                 <i class="fas fa-cloud-upload-alt"></i> Sync Cloud
                             </button>
                         </div>
                     </div>
-
-                    <div class="bg-white p-4 rounded-2xl border border-slate-200 text-center shadow-sm">
-                        <div class="text-3xl font-black text-slate-800" id="word-count">0</div>
-                        <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Word Count</div>
-                    </div>
                 </div>
 
                 <div class="lg:col-span-3">
                     <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8">
-                        <input type="text" id="session-title" placeholder="ENTER TITLE..." class="title-input-header mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div><label class="text-[9px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Title</label><input type="text" id="session-title" placeholder="ENTER TITLE..." class="header-field text-lg"></div>
+                            <div><label class="text-[9px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Department</label><input type="text" id="session-dept" placeholder="DEPT..." class="header-field text-lg"></div>
+                            <div><label class="text-[9px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Date</label><input type="date" id="session-date-picker" class="header-field text-lg"></div>
+                        </div>
+
                         <div class="no-print flex justify-between items-center mb-4">
-                            <div class="flex gap-2">
-                                <button onclick="window.print()" class="text-[10px] font-bold text-slate-500 border p-2 rounded-lg bg-slate-50 hover:bg-white"><i class="fas fa-print"></i> PDF</button>
-                                <button onclick="insertTimestamp()" class="text-[10px] font-bold text-blue-500 border p-2 rounded-lg bg-blue-50 hover:bg-white"><i class="fas fa-clock"></i> TIMESTAMP</button>
-                            </div>
+                            <button onclick="insertTimestamp()" class="text-[10px] font-bold text-blue-500 border p-2 rounded-lg bg-blue-50 hover:bg-white"><i class="fas fa-clock"></i> TIMESTAMP</button>
                             <span id="save-status" class="text-[10px] font-bold text-emerald-500 uppercase italic"></span>
                         </div>
-                        <textarea id="output" oninput="updateWordCount()" class="medical-canvas w-full h-[550px] text-lg focus:outline-none resize-none border-t pt-4" placeholder="Ready for recording or editing..."></textarea>
+                        
+                        <textarea id="output" class="medical-canvas w-full h-[500px] text-lg focus:outline-none resize-none border-t pt-4" placeholder="Transcription..."></textarea>
                     </div>
                 </div>
             </div>
 
             <div id="view-library" class="hidden no-print">
                 <div class="bg-white rounded-3xl shadow-xl p-10 border border-slate-200 min-h-[600px]">
-                    <h2 class="text-xl font-bold uppercase mb-8 border-b pb-4">Saved Meeting Archives</h2>
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 border-b pb-6">
+                        <h2 class="text-xl font-bold uppercase tracking-tighter flex items-center gap-2"><i class="fas fa-folder-open text-emerald-500"></i> Archives</h2>
+                        <div class="relative w-full md:w-96">
+                            <i class="fas fa-search absolute left-4 top-3.5 text-slate-300"></i>
+                            <input type="text" id="library-search" oninput="loadLibrary()" placeholder="Search Title or Dept..." class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none">
+                        </div>
+                    </div>
                     <div id="library-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
                     <div id="empty-msg" class="text-center py-40 text-slate-300 italic hidden">No archives found.</div>
                 </div>
@@ -97,17 +103,10 @@
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwLBvnrlj8eTfp3NbXoIFxWfvs4BNC_L0YZbez87IMn9ZH5p78qLEPRVGLwI0l3M9MY/exec";
         let db, mediaRecorder, chunks = [], finalTranscript = "", currentEntryId = null;
 
-        // DB setup - Updated to Version 2 to support Blob storage
-        const request = indexedDB.open("BABRN_Turbo_Replay_DB", 2);
-        request.onupgradeneeded = e => {
-            const dbRef = e.target.result;
-            if (!dbRef.objectStoreNames.contains("sessions")) {
-                dbRef.createObjectStore("sessions", { keyPath: "id" });
-            }
-        };
-        request.onsuccess = e => { db = e.target.result; loadLibrary(); };
+        const request = indexedDB.open("BABRN_Turbo_Copy_DB", 3);
+        request.onupgradeneeded = e => { e.target.result.createObjectStore("sessions", { keyPath: "id" }); };
+        request.onsuccess = e => { db = e.target.result; document.getElementById('session-date-picker').valueAsDate = new Date(); loadLibrary(); };
 
-        // Recognition Config
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
@@ -121,10 +120,9 @@
                 else interim += e.results[i][0].transcript;
             }
             document.getElementById('output').value = finalTranscript + interim;
-            updateWordCount();
+            document.getElementById('output').scrollTop = document.getElementById('output').scrollHeight;
         };
 
-        // Recording Logic
         document.getElementById('start-btn').onclick = async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -141,8 +139,7 @@
                 document.getElementById('start-btn').classList.add('hidden');
                 document.getElementById('stop-btn').classList.remove('hidden');
                 document.getElementById('recording-indicator').classList.remove('hidden');
-                document.getElementById('audio-replay-container').classList.add('hidden');
-            } catch(err) { alert("Mic Error. Please ensure you use HTTPS."); }
+            } catch(err) { alert("Mic Error."); }
         };
 
         document.getElementById('stop-btn').onclick = () => {
@@ -153,17 +150,39 @@
             document.getElementById('recording-indicator').classList.add('hidden');
         };
 
+        function copyAllText() {
+            const text = document.getElementById('output').value;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.currentTarget;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => btn.innerHTML = originalText, 2000);
+            });
+        }
+
+        function quickCopy(id) {
+            db.transaction("sessions", "readonly").objectStore("sessions").get(id).onsuccess = (e) => {
+                navigator.clipboard.writeText(e.target.result.text);
+                alert("Transcription copied to clipboard!");
+            };
+        }
+
         function saveToLocal(audioBlob) {
             const id = Date.now();
-            const title = document.getElementById('session-title').value || "Session " + new Date().toLocaleTimeString();
-            const text = document.getElementById('output').value;
+            const payload = {
+                id,
+                title: document.getElementById('session-title').value || "Untitled",
+                dept: document.getElementById('session-dept').value || "General",
+                sessionDate: document.getElementById('session-date-picker').value,
+                text: document.getElementById('output').value,
+                audio: audioBlob,
+                dateCreated: new Date().toLocaleString()
+            };
             const tx = db.transaction("sessions", "readwrite");
-            tx.objectStore("sessions").add({ id, title, text, audio: audioBlob, date: new Date().toLocaleString() });
+            tx.objectStore("sessions").add(payload);
             currentEntryId = id;
-            
-            // Immediately load player for the new recording
             loadAudioPlayer(audioBlob);
-            document.getElementById('save-status').innerText = "✓ ARCHIVED WITH AUDIO";
+            document.getElementById('save-status').innerText = "✓ ARCHIVED";
             setTimeout(() => document.getElementById('save-status').innerText = "", 3000);
         }
 
@@ -175,9 +194,10 @@
                 const data = e.target.result;
                 data.text = document.getElementById('output').value;
                 data.title = document.getElementById('session-title').value;
+                data.dept = document.getElementById('session-dept').value;
+                data.sessionDate = document.getElementById('session-date-picker').value;
                 store.put(data);
-                document.getElementById('save-status').innerText = "✓ EDITS SAVED";
-                setTimeout(() => document.getElementById('save-status').innerText = "", 3000);
+                document.getElementById('save-status').innerText = "✓ UPDATED";
             };
         }
 
@@ -192,22 +212,30 @@
 
         function loadLibrary() {
             const list = document.getElementById('library-list');
+            const search = document.getElementById('library-search').value.toLowerCase();
             list.innerHTML = "";
+            let count = 0;
             db.transaction("sessions", "readonly").objectStore("sessions").openCursor(null, 'prev').onsuccess = (e) => {
                 const cursor = e.target.result;
                 if (cursor) {
-                    const div = document.createElement('div');
-                    div.className = "bg-white p-5 rounded-2xl border border-slate-200 shadow-sm";
-                    div.innerHTML = `
-                        <h3 class="font-bold uppercase text-xs truncate mb-1">${cursor.value.title}</h3>
-                        <p class="text-[9px] text-slate-400 mb-4">${cursor.value.date}</p>
-                        <div class="flex gap-2">
-                            <button onclick="openEntry(${cursor.value.id})" class="flex-1 bg-slate-800 text-white py-2 rounded-lg text-[10px] font-bold hover:bg-emerald-500 transition-colors">EDIT & REPLAY</button>
-                            <button onclick="deleteEntry(${cursor.value.id})" class="text-slate-300 hover:text-red-500 px-2"><i class="fas fa-trash"></i></button>
-                        </div>`;
-                    list.appendChild(div);
+                    if (cursor.value.title.toLowerCase().includes(search) || cursor.value.dept.toLowerCase().includes(search)) {
+                        count++;
+                        const div = document.createElement('div');
+                        div.className = "bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative";
+                        div.innerHTML = `
+                            <button onclick="quickCopy(${cursor.value.id})" class="absolute top-4 right-4 text-slate-300 hover:text-blue-500" title="Copy Text"><i class="fas fa-copy"></i></button>
+                            <div class="mb-2"><span class="text-[8px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold uppercase">${cursor.value.dept}</span></div>
+                            <h3 class="font-bold uppercase text-xs truncate pr-6">${cursor.value.title}</h3>
+                            <p class="text-[9px] text-slate-400 mb-4">Date: ${cursor.value.sessionDate}</p>
+                            <div class="flex gap-2">
+                                <button onclick="openEntry(${cursor.value.id})" class="flex-1 bg-slate-800 text-white py-2 rounded-lg text-[10px] font-bold">OPEN</button>
+                                <button onclick="deleteEntry(${cursor.value.id})" class="text-slate-300 hover:text-red-500 px-2"><i class="fas fa-trash"></i></button>
+                            </div>`;
+                        list.appendChild(div);
+                    }
                     cursor.continue();
                 }
+                document.getElementById('empty-msg').classList.toggle('hidden', count > 0);
             };
         }
 
@@ -216,55 +244,36 @@
                 const doc = e.target.result;
                 document.getElementById('output').value = doc.text;
                 document.getElementById('session-title').value = doc.title;
+                document.getElementById('session-dept').value = doc.dept;
+                document.getElementById('session-date-picker').value = doc.sessionDate;
                 finalTranscript = doc.text;
                 currentEntryId = id;
                 loadAudioPlayer(doc.audio);
-                updateWordCount();
                 switchTab('recorder');
             };
         }
 
-        function deleteEntry(id) {
-            if(confirm("Delete this archive permanently?")) {
-                db.transaction("sessions", "readwrite").objectStore("sessions").delete(id);
-                setTimeout(loadLibrary, 100);
-            }
-        }
+        function deleteEntry(id) { if(confirm("Permanently delete?")) { db.transaction("sessions", "readwrite").objectStore("sessions").delete(id); setTimeout(loadLibrary, 100); } }
 
         function prepareNewSession() {
             if(confirm("Start new session?")) {
                 document.getElementById('output').value = "";
                 document.getElementById('session-title').value = "";
+                document.getElementById('session-dept').value = "";
+                document.getElementById('session-date-picker').valueAsDate = new Date();
                 document.getElementById('audio-replay-container').classList.add('hidden');
                 document.getElementById('update-btn').classList.add('hidden');
                 finalTranscript = "";
                 currentEntryId = null;
-                updateWordCount();
             }
         }
 
-        function updateWordCount() {
-            const text = document.getElementById('output').value.trim();
-            document.getElementById('word-count').innerText = text ? text.split(/\s+/).length : 0;
-        }
-
-        function insertTimestamp() {
-            const out = document.getElementById('output');
-            out.value += `\n[${new Date().toLocaleTimeString()}] `;
-            finalTranscript = out.value;
-        }
-
         async function syncToGoogle() {
-            const title = document.getElementById('session-title').value || "No Title";
-            const text = document.getElementById('output').value;
-            const btn = document.getElementById('cloud-btn');
-            btn.innerText = "SYNCING...";
-            try {
-                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ title, text, date: new Date().toLocaleString() }) });
-                alert("Cloud Sync Successful!");
-            } catch(e) { alert("Sync failed."); }
-            finally { btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Sync Cloud'; }
+            const payload = { title: document.getElementById('session-title').value, department: document.getElementById('session-dept').value, sessionDate: document.getElementById('session-date-picker').value, text: document.getElementById('output').value };
+            try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }); alert("Synced!"); } catch(e) { alert("Fail"); }
         }
+
+        function insertTimestamp() { const out = document.getElementById('output'); out.value += `\n[${new Date().toLocaleTimeString()}] `; finalTranscript = out.value; }
 
         function switchTab(tab) {
             document.getElementById('view-recorder').classList.toggle('hidden', tab !== 'recorder');
