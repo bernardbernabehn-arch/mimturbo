@@ -3,184 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BABRN Turbo | Final Fix</title>
+    <title>BABRN Turbo | Archive Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=JetBrains+Mono&display=swap');
-        :root { --bg: #0f172a; --panel: rgba(30, 41, 59, 0.7); --accent: #10b981; --text: #f8fafc; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); }
-        .glass { background: var(--panel); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); }
-        .canvas { font-family: 'JetBrains Mono', monospace; background: #1e293b; color: #f8fafc; line-height: 1.8; }
+        
+        :root {
+            --bg-body: #0f172a;
+            --bg-glass: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --accent: #10b981;
+            --input-bg: #1e293b;
+            --border: rgba(255,255,255,0.1);
+            --nav-bg: #002b5c; 
+        }
+
+        body.theme-light {
+            --bg-body: #f1f5f9;
+            --bg-glass: rgba(255, 255, 255, 0.6); 
+            --text-main: #001f3f; 
+            --accent: #059669; 
+            --input-bg: rgba(255, 255, 255, 0.8);
+            --border: rgba(0, 31, 63, 0.1);
+            --nav-bg: #001f3f; 
+        }
+
+        body { font-family: 'Plus+Jakarta+Sans', sans-serif; background: var(--bg-body); color: var(--text-main); transition: all 0.3s ease; }
+        .glass-panel { background: var(--bg-glass); backdrop-filter: blur(15px); border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .medical-canvas { font-family: 'JetBrains Mono', monospace; background: var(--input-bg); color: var(--text-main); line-height: 1.8; border: 1px solid var(--border); }
+        .input-accent { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); }
+        .nav-custom { background: var(--nav-bg); color: white; }
+        .word-badge { background: var(--accent); color: white; padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; }
         .active-tab { color: #10b981; border-bottom: 2px solid #10b981; }
-        .pulse { animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        
+        .archive-card { transition: all 0.3s ease; border: 1px solid var(--border); }
+        .archive-card:hover { border-color: var(--accent); transform: translateY(-2px); }
     </style>
 </head>
 <body class="min-h-screen pb-10">
 
-    <nav class="bg-[#001f3f] px-6 py-4 mb-8 flex justify-between items-center shadow-2xl">
+    <nav class="nav-custom no-print sticky top-0 z-50 px-6 py-4 mb-8 flex justify-between items-center shadow-lg">
         <div class="flex items-center gap-3">
-            <div class="bg-emerald-500 p-2 rounded-lg"><i class="fas fa-microchip text-white"></i></div>
+            <div class="bg-emerald-500 p-2 rounded-lg"><i class="fas fa-folder-open text-white"></i></div>
             <h1 class="text-xl font-bold uppercase tracking-tighter">BABRN <span class="text-emerald-400">Turbo</span></h1>
         </div>
-        <div class="flex gap-6 text-xs font-bold uppercase tracking-widest">
-            <button onclick="showView('editor')" id="btn-editor" class="active-tab py-2">Editor</button>
-            <button onclick="showView('archive')" id="btn-archive" class="py-2 text-slate-400">Archives</button>
+
+        <div class="flex items-center gap-6">
+            <div id="autosave-indicator" class="hidden text-[9px] font-extrabold text-emerald-400 uppercase bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                <i class="fas fa-sync-alt fa-spin mr-1"></i> Auto-Saving
+            </div>
+            <div class="flex gap-8 text-xs font-bold uppercase tracking-widest no-print">
+                <button onclick="switchTab('recorder')" id="tab-recorder" class="active-tab py-2">Editor</button>
+                <button onclick="switchTab('library')" id="tab-library" class="text-slate-400 py-2">Archives</button>
+            </div>
+            <div class="flex gap-2 bg-white/10 p-1 rounded-full">
+                <button onclick="setTheme('dark')" class="w-5 h-5 rounded-full bg-slate-900 border border-white/20"></button>
+                <button onclick="setTheme('light')" class="w-5 h-5 rounded-full bg-slate-100 border border-black/20"></button>
+            </div>
         </div>
     </nav>
 
     <div class="max-w-7xl mx-auto px-4">
-        <div id="view-editor" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div class="lg:col-span-3 space-y-4">
-                <div class="glass p-6 rounded-3xl shadow-xl">
-                    <div id="timer" class="text-5xl font-black mb-6 text-center">00:00</div>
-                    <button id="start-btn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-5 rounded-2xl mb-4 uppercase tracking-widest flex items-center justify-center gap-3 transition-all">
-                        <i class="fas fa-play"></i> Start Transcribing
+        <div id="view-recorder" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-3 space-y-4 no-print">
+                <div class="glass-panel p-6 rounded-3xl shadow-xl">
+                    <button id="start-btn" class="w-full font-bold py-4 rounded-2xl mb-4 uppercase flex items-center justify-center gap-2 shadow-lg" style="background: var(--accent); color: white;">
+                        <i class="fas fa-microphone"></i> Start Session
                     </button>
-                    <button id="stop-btn" class="hidden w-full bg-red-600 text-white font-bold py-5 rounded-2xl mb-4 uppercase tracking-widest flex items-center justify-center gap-3 pulse">
-                        <i class="fas fa-stop"></i> Stop & Save
+                    <button id="stop-btn" class="hidden w-full bg-red-600 text-white font-bold py-4 rounded-2xl mb-4 animate-pulse uppercase flex items-center justify-center gap-2 shadow-lg">
+                        <i class="fas fa-stop"></i> Stop & Archive
                     </button>
-                    <div class="pt-6 border-t border-white/10 space-y-3">
-                        <button onclick="copyText()" class="w-full py-2 rounded-xl text-[10px] font-bold uppercase border border-white/10">Copy Text</button>
-                        <button onclick="syncToCloud()" class="w-full bg-blue-700 py-3 rounded-xl text-[10px] font-bold uppercase">Cloud Sync</button>
+                    <div id="status-display" class="text-[9px] text-center font-bold py-1 px-3 rounded-full bg-black/20 mb-4 opacity-50 uppercase tracking-widest">Ready</div>
+                    <div class="space-y-3 pt-4 border-t border-white/10">
+                        <button onclick="copyAllText()" class="w-full py-3 rounded-xl text-[10px] font-bold uppercase border border-white/10 hover:bg-black/5 transition-all">Copy Text</button>
+                        <button onclick="syncToGoogle()" id="cloud-btn" class="w-full bg-blue-700 text-white font-bold py-4 rounded-xl text-[10px] uppercase shadow-lg">Manual Sync</button>
                     </div>
                 </div>
+                <button onclick="prepareNewSession()" class="w-full glass-panel font-bold py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-black/5 transition-all">
+                    <i class="fas fa-plus text-emerald-500"></i> NEW SESSION
+                </button>
             </div>
 
             <div class="lg:col-span-9">
-                <div class="glass rounded-3xl p-8">
-                    <div class="flex justify-between items-center mb-4">
-                        <span id="word-count" class="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-[10px] font-bold">0 WORDS</span>
-                        <div id="engine-status" class="text-[9px] font-bold text-red-400 uppercase">Mic Off</div>
+                <div class="glass-panel rounded-3xl p-8 shadow-2xl">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <input type="text" id="session-prepared-by" placeholder="Prepared By" class="input-accent p-3 rounded-xl text-xs">
+                        <input type="text" id="session-dept" placeholder="Dept" class="input-accent p-3 rounded-xl text-xs">
+                        <input type="text" id="session-title" placeholder="Session Title" class="input-accent p-3 rounded-xl text-xs">
+                        <input type="date" id="session-date-picker" class="input-accent p-3 rounded-xl text-xs">
                     </div>
-                    <textarea id="output" class="canvas w-full h-[600px] p-8 rounded-2xl text-lg focus:outline-none resize-none" placeholder="Click 'Start' and begin speaking..."></textarea>
+                    <div class="flex justify-between items-center mb-2 px-2 no-print">
+                        <button onclick="insertTimestamp()" class="text-[10px] font-bold text-emerald-400 flex items-center gap-2"><i class="fas fa-clock"></i> TIMESTAMP</button>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold opacity-60 uppercase">Words:</span>
+                            <span id="word-count" class="word-badge">0</span>
+                        </div>
+                    </div>
+                    <textarea id="output" oninput="updateWordCount()" class="medical-canvas w-full h-[550px] p-8 rounded-2xl text-lg focus:outline-none resize-none shadow-inner" placeholder="Transcription text..."></textarea>
                 </div>
             </div>
         </div>
 
-        <div id="view-archive" class="hidden">
-            <div class="glass rounded-3xl p-8 min-h-[500px]">
-                <h2 class="text-xl font-bold mb-6 uppercase">Saved Sessions</h2>
-                <div id="archive-list" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+        <div id="view-library" class="hidden no-print">
+            <div class="glass-panel rounded-3xl p-8 min-h-[600px]">
+                <h2 class="text-xl font-bold mb-8 uppercase tracking-widest">Saved Records</h2>
+                <div id="library-list" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
             </div>
         </div>
     </div>
 
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby6ZIAuBnLUogVY6UxY-4TNb3Zy7iRCVi56UtpfkLg79LXbiTo97PnroSo96lvBS3FF/exec";
-        let recognition, isRecording = false, db, timer, fullText = "";
+        let db, isRecording = false, finalTranscript = "", autoSaveTimer;
 
-        // 1. INITIALIZE DATABASE
-        const req = indexedDB.open("BABRN_FINAL", 2);
-        req.onupgradeneeded = e => e.target.result.createObjectStore("records", { keyPath: "id" });
-        req.onsuccess = e => { db = e.target.result; renderArchive(); };
+        // SPEECH ENGINE + AUTO-HEALING
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'en-US';
 
-        // 2. SETUP SPEECH ENGINE
-        if ('webkitSpeechRecognition' in window) {
-            recognition = new webkitSpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            
-            recognition.onstart = () => {
-                document.getElementById('engine-status').innerText = "Recording...";
-                document.getElementById('engine-status').className = "text-[9px] font-bold text-emerald-400 uppercase";
-            };
+        recognition.onend = () => { if (isRecording) recognition.start(); };
+        recognition.onresult = (e) => {
+            let interim = "";
+            for (let i = e.resultIndex; i < e.results.length; ++i) {
+                if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript + " ";
+                else interim += e.results[i][0].transcript;
+            }
+            document.getElementById('output').value = finalTranscript + interim;
+            updateWordCount();
+        };
 
-            recognition.onresult = (e) => {
-                let interim = "";
-                for (let i = e.resultIndex; i < e.results.length; ++i) {
-                    if (e.results[i].isFinal) fullText += e.results[i][0].transcript + " ";
-                    else interim += e.results[i][0].transcript;
-                }
-                document.getElementById('output').value = fullText + interim;
-                updateWordCount();
-            };
+        // DATABASE CONNECTION
+        const request = indexedDB.open("BABRN_V_FINAL_ARCHIVE", 1);
+        request.onupgradeneeded = e => { e.target.result.createObjectStore("sessions", { keyPath: "id" }); };
+        request.onsuccess = e => { db = e.target.result; document.getElementById('session-date-picker').valueAsDate = new Date(); loadLibrary(); };
 
-            recognition.onend = () => { if (isRecording) recognition.start(); };
-        }
-
-        // 3. BUTTON ACTIONS
+        // SESSION CONTROLS
         document.getElementById('start-btn').onclick = () => {
-            isRecording = true;
-            recognition.start();
-            startTimer();
+            isRecording = true; recognition.start();
+            autoSaveTimer = setInterval(syncToGoogle, 300000); // 5 mins
             document.getElementById('start-btn').classList.add('hidden');
             document.getElementById('stop-btn').classList.remove('hidden');
-            setInterval(autoSaveCloud, 300000); // 5 min
         };
 
         document.getElementById('stop-btn').onclick = () => {
-            isRecording = false;
-            recognition.stop();
-            stopTimer();
-            saveToArchive();
+            isRecording = false; recognition.stop();
+            clearInterval(autoSaveTimer);
+            saveSession();
             document.getElementById('start-btn').classList.remove('hidden');
             document.getElementById('stop-btn').classList.add('hidden');
         };
 
-        // 4. ARCHIVE LOGIC
-        function saveToArchive() {
-            const data = { id: Date.now(), text: document.getElementById('output').value, date: new Date().toLocaleString() };
-            db.transaction("records", "readwrite").objectStore("records").add(data);
-            renderArchive();
+        function saveSession() {
+            const data = {
+                id: Date.now(),
+                title: document.getElementById('session-title').value || "Untitled",
+                dept: document.getElementById('session-dept').value || "Gen",
+                preparedBy: document.getElementById('session-prepared-by').value || "User",
+                sessionDate: document.getElementById('session-date-picker').value,
+                text: document.getElementById('output').value
+            };
+            db.transaction("sessions", "readwrite").objectStore("sessions").add(data);
+            loadLibrary();
         }
 
-        function renderArchive() {
-            const list = document.getElementById('archive-list');
+        function loadLibrary() {
+            const list = document.getElementById('library-list');
             list.innerHTML = "";
-            db.transaction("records", "readonly").objectStore("records").getAll().onsuccess = (e) => {
-                e.target.result.forEach(item => {
+            db.transaction("sessions", "readonly").objectStore("sessions").openCursor(null, 'prev').onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
                     const card = document.createElement('div');
-                    card.className = "bg-white/5 p-4 rounded-xl border border-white/10";
-                    card.innerHTML = `<div class="text-[10px] opacity-50 mb-2">${item.date}</div>
+                    card.className = "archive-card bg-black/10 p-5 rounded-2xl flex flex-col justify-between";
+                    card.innerHTML = `
+                        <div>
+                            <h3 class="font-bold text-sm uppercase mb-1">${cursor.value.title}</h3>
+                            <p class="text-[9px] opacity-60 mb-4">${cursor.value.sessionDate} | BY: ${cursor.value.preparedBy}</p>
+                        </div>
                         <div class="flex gap-2">
-                            <button onclick="loadRecord(${item.id})" class="bg-emerald-500/20 text-emerald-400 text-[10px] px-3 py-1 rounded">LOAD</button>
-                            <button onclick="deleteRecord(${item.id})" class="bg-red-500/20 text-red-500 text-[10px] px-3 py-1 rounded">DEL</button>
-                        </div>`;
+                            <button onclick="openEntry(${cursor.value.id})" class="flex-1 bg-emerald-500/20 text-emerald-500 py-2 rounded-xl text-[10px] font-bold hover:bg-emerald-500 hover:text-white transition-all">VIEW</button>
+                            <button onclick="deleteEntry(${cursor.value.id})" class="w-10 bg-red-500/10 text-red-500 py-2 rounded-xl text-[10px] hover:bg-red-500 hover:text-white transition-all"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `;
                     list.appendChild(card);
-                });
+                    cursor.continue();
+                }
             };
         }
 
-        function loadRecord(id) {
-            db.transaction("records", "readonly").objectStore("records").get(id).onsuccess = (e) => {
-                document.getElementById('output').value = e.target.result.text;
-                fullText = e.target.result.text;
-                showView('editor');
+        function openEntry(id) {
+            db.transaction("sessions", "readonly").objectStore("sessions").get(id).onsuccess = (e) => {
+                const d = e.target.result;
+                document.getElementById('output').value = d.text;
+                document.getElementById('session-title').value = d.title;
+                document.getElementById('session-dept').value = d.dept;
+                document.getElementById('session-prepared-by').value = d.preparedBy;
+                document.getElementById('session-date-picker').value = d.sessionDate;
+                finalTranscript = d.text;
+                updateWordCount();
+                switchTab('recorder');
             };
         }
 
-        function deleteRecord(id) {
-            db.transaction("records", "readwrite").objectStore("records").delete(id);
-            renderArchive();
+        function deleteEntry(id) {
+            if(confirm("Permanently delete this record?")) {
+                db.transaction("sessions", "readwrite").objectStore("sessions").delete(id);
+                loadLibrary();
+            }
         }
 
-        // 5. UTILS
-        function startTimer() {
-            let s = 0;
-            timer = setInterval(() => {
-                s++;
-                let min = Math.floor(s/60).toString().padStart(2,'0');
-                let sec = (s%60).toString().padStart(2,'0');
-                document.getElementById('timer').innerText = `${min}:${sec}`;
-            }, 1000);
+        async function syncToGoogle() {
+            const indicator = document.getElementById('autosave-indicator');
+            indicator.classList.remove('hidden');
+            const payload = {
+                title: document.getElementById('session-title').value,
+                department: document.getElementById('session-dept').value,
+                preparedBy: document.getElementById('session-prepared-by').value,
+                sessionDate: document.getElementById('session-date-picker').value,
+                text: document.getElementById('output').value
+            };
+            fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+            .then(() => setTimeout(() => indicator.classList.add('hidden'), 3000));
         }
-        function stopTimer() { clearInterval(timer); document.getElementById('timer').innerText = "00:00"; }
-        function showView(v) {
-            document.getElementById('view-editor').classList.toggle('hidden', v !== 'editor');
-            document.getElementById('view-archive').classList.toggle('hidden', v !== 'archive');
-            document.getElementById('btn-editor').className = v === 'editor' ? 'active-tab py-2' : 'py-2 text-slate-400';
-            document.getElementById('btn-archive').className = v === 'archive' ? 'active-tab py-2' : 'py-2 text-slate-400';
-        }
+
         function updateWordCount() {
-            const val = document.getElementById('output').value.trim();
-            document.getElementById('word-count').innerText = (val ? val.split(/\s+/).length : 0) + " WORDS";
+            const text = document.getElementById('output').value.trim();
+            document.getElementById('word-count').innerText = text ? text.split(/\s+/).length : 0;
         }
-        function copyText() { navigator.clipboard.writeText(document.getElementById('output').value); alert("Copied!"); }
-        function autoSaveCloud() {
-            fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({text: document.getElementById('output').value}) });
+
+        function setTheme(theme) {
+            document.body.className = theme === 'light' ? 'theme-light' : '';
+            localStorage.setItem('babrn-theme', theme);
         }
+        setTheme(localStorage.getItem('babrn-theme') || 'dark');
+
+        function switchTab(t) {
+            document.getElementById('view-recorder').classList.toggle('hidden', t !== 'recorder');
+            document.getElementById('view-library').classList.toggle('hidden', t !== 'library');
+            document.getElementById('tab-recorder').classList.toggle('active-tab', t === 'recorder');
+            document.getElementById('tab-library').classList.toggle('active-tab', t === 'library');
+            if(t === 'library') loadLibrary();
+        }
+
+        function insertTimestamp() { document.getElementById('output').value += `\n[${new Date().toLocaleTimeString()}] `; }
+        function copyAllText() { navigator.clipboard.writeText(document.getElementById('output').value); alert("Text Copied!"); }
+        function prepareNewSession() { if(confirm("Discard current view for a new session?")) location.reload(); }
     </script>
 </body>
 </html>
