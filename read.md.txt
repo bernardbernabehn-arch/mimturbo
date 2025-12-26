@@ -1,0 +1,20 @@
+# BABRN Cloud Universal
+
+## 1. Local Browser Features
+- **Live Transcription**: High-accuracy text generation.
+- **Audio Visualizer**: Real-time feedback for microphone activity.
+- **IndexedDB**: Persistent local storage that works offline.
+- **Searchable Library**: Real-time filtering by title or content.
+
+## 2. Cloud Sync Setup (Google Sheets)
+To use the Sync button, create a Google Apps Script:
+1. Open a Google Sheet.
+2. Go to **Extensions > Apps Script**.
+3. Paste this code:
+```javascript
+function doPost(e) {
+  var data = JSON.parse(e.postData.contents);
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  sheet.appendRow([data.date, data.title, data.text]);
+  return ContentService.createTextOutput("Success");
+}
