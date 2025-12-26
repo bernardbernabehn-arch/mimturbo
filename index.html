@@ -10,12 +10,14 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;500&display=swap');
         
         :root {
-            --bg: #f8fafc;
-            --panel: #ffffff;
-            --text: #0f172a;
+            /* Paper Cream Theme (Gentle on eyes) */
+            --bg: #f4f1ea; 
+            --panel: #fffdf9;
+            --text: #2d3436;
             --accent: #10b981;
-            --border: rgba(0,0,0,0.05);
-            --editor: #ffffff;
+            --border: rgba(0,0,0,0.08);
+            --editor: #fffdf9;
+            --input-bg: #ece8e0;
         }
 
         .dark-mode {
@@ -25,67 +27,77 @@
             --accent: #10b981;
             --border: rgba(255,255,255,0.05);
             --editor: #1a2236;
+            --input-bg: rgba(255,255,255,0.03);
         }
 
         body { 
             font-family: 'Inter', sans-serif; 
             background-color: var(--bg); 
             color: var(--text); 
-            transition: all 0.3s ease;
+            transition: background-color 0.4s ease, color 0.4s ease;
         }
 
         .glass-card {
             background: var(--panel);
             border: 1px solid var(--border);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            border-radius: 28px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            border-radius: 24px;
         }
 
         .editor-area {
             background: var(--editor);
             line-height: 1.8;
             resize: none;
-            border-radius: 24px;
+            border-radius: 20px;
             color: var(--text);
             border: 1px solid var(--border);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
         }
 
-        .active-tab {
-            color: var(--accent);
-            background: rgba(16, 185, 129, 0.1);
-            border-radius: 12px;
+        input {
+            background: var(--input-bg) !important;
+            color: var(--text) !important;
+            border: 1px solid var(--border) !important;
         }
 
-        .recording-pulse { animation: pulse-ring 2s infinite; background: #ef4444 !important; color: white !important; }
-        @keyframes pulse-ring { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+        .recording-pulse { 
+            animation: pulse-ring 2s infinite; 
+            background: #e63946 !important; 
+            color: white !important; 
+            border: none !important;
+        }
+        
+        @keyframes pulse-ring { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     </style>
 </head>
 <body class="min-h-screen">
 
     <nav class="px-8 py-6 flex justify-between items-center max-w-[1600px] mx-auto">
         <div class="flex items-center gap-4">
-            <div class="h-10 w-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+            <div class="h-10 w-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-md">
                 <i class="fas fa-microphone-lines text-white text-lg"></i>
             </div>
             <div>
-                <h1 class="text-lg font-800 tracking-tighter uppercase leading-none">BABRN <span class="text-emerald-500">TURBO</span></h1>
-                <p class="text-[10px] opacity-50 font-bold tracking-[0.2em] uppercase">Elite Capture Suite</p>
+                <h1 class="text-lg font-800 tracking-tighter uppercase leading-none">BABRN <span class="text-emerald-600">TURBO</span></h1>
+                <p class="text-[10px] opacity-60 font-bold tracking-[0.2em] uppercase">Elite Capture Suite</p>
             </div>
         </div>
 
-        <div class="flex items-center gap-6">
-            <button onclick="toggleTheme()" class="h-10 w-10 rounded-xl border border-slate-200 dark:border-white/10 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-white/5 transition-all">
-                <i id="theme-icon" class="fas fa-moon"></i>
+        <div class="flex items-center gap-4">
+            <button onclick="toggleTheme()" class="h-10 px-4 rounded-xl border border-black/10 dark:border-white/10 flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-all">
+                <i id="theme-icon" class="fas fa-moon text-xs"></i>
+                <span class="text-[10px] font-bold uppercase tracking-widest">Toggle Comfort</span>
             </button>
-            <div class="flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-2xl border border-black/5 dark:border-white/5">
-                <button onclick="switchTab('recorder')" id="tab-recorder" class="px-6 py-2.5 text-xs font-bold uppercase tracking-widest active-tab transition-all">Recorder</button>
-                <button onclick="switchTab('library')" id="tab-library" class="px-6 py-2.5 text-xs font-bold uppercase tracking-widest opacity-50 transition-all">Archives</button>
+            <div class="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl">
+                <button onclick="switchTab('recorder')" id="tab-recorder" class="px-5 py-2 text-xs font-bold uppercase tracking-widest active-tab transition-all">Editor</button>
+                <button onclick="switchTab('library')" id="tab-library" class="px-5 py-2 text-xs font-bold uppercase tracking-widest opacity-50 transition-all">Archives</button>
             </div>
         </div>
     </nav>
 
     <main class="max-w-[1600px] mx-auto px-8 pb-12">
         <div id="view-recorder" class="grid grid-cols-12 gap-8">
+            
             <div class="col-span-12 lg:col-span-3 space-y-6">
                 <div class="glass-card p-8">
                     <div class="text-center mb-8">
@@ -93,23 +105,23 @@
                         <div id="timer" class="text-5xl font-light tracking-tighter mt-2 font-mono">00:00:00</div>
                     </div>
                     
-                    <button id="start-btn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-5 rounded-2xl transition-all shadow-lg">
+                    <button id="start-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-5 rounded-2xl transition-all shadow-lg">
                         START SESSION
                     </button>
                     
                     <button id="stop-btn" class="hidden w-full font-bold py-5 rounded-2xl transition-all recording-pulse">
-                        STOP & FINISH
+                        STOP & SAVE
                     </button>
 
-                    <div class="mt-10 space-y-3 pt-6 border-t border-black/5 dark:border-white/5">
-                        <button id="download-audio-btn" disabled class="w-full py-4 text-[11px] font-bold uppercase border border-black/10 dark:border-white/10 rounded-xl opacity-30 flex items-center justify-center gap-3">
-                            <i class="fas fa-file-audio"></i> Save Audio (WAV)
+                    <div class="mt-8 space-y-3 pt-6 border-t border-black/5 dark:border-white/5">
+                        <button id="download-audio-btn" disabled class="w-full py-4 text-[10px] font-bold uppercase border border-black/10 dark:border-white/10 rounded-xl opacity-30 flex items-center justify-center gap-3">
+                            <i class="fas fa-file-audio"></i> Audio (WAV)
                         </button>
-                        <button onclick="downloadAsWord()" class="w-full py-4 text-[11px] font-bold uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded-xl flex items-center justify-center gap-3">
-                            <i class="fas fa-file-word"></i> Save Text (.Doc)
+                        <button onclick="downloadAsWord()" class="w-full py-4 text-[10px] font-bold uppercase bg-emerald-600/5 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 rounded-xl flex items-center justify-center gap-3">
+                            <i class="fas fa-file-word"></i> Report (.Doc)
                         </button>
-                        <button onclick="syncToGoogle()" id="cloud-btn" class="w-full py-4 text-[11px] font-bold uppercase border border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-3">
-                            <i class="fas fa-cloud"></i> Sync Google
+                        <button onclick="syncToGoogle()" id="cloud-btn" class="w-full py-4 text-[10px] font-bold uppercase border border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-3">
+                            <i class="fas fa-cloud"></i> Google Sheets
                         </button>
                     </div>
                 </div>
@@ -117,30 +129,42 @@
 
             <div class="col-span-12 lg:col-span-9 space-y-6">
                 <div class="glass-card p-8">
-                    <div class="grid grid-cols-4 gap-6 mb-8">
-                        <input type="text" id="session-title" placeholder="Patient/Ref" class="bg-slate-100 dark:bg-slate-800/40 border border-black/5 dark:border-white/5 rounded-xl p-4 text-sm outline-none">
-                        <input type="text" id="session-prepared" placeholder="Staff Name" class="bg-slate-100 dark:bg-slate-800/40 border border-black/5 dark:border-white/5 rounded-xl p-4 text-sm outline-none">
-                        <input type="text" id="session-dept" placeholder="Dept" class="bg-slate-100 dark:bg-slate-800/40 border border-black/5 dark:border-white/5 rounded-xl p-4 text-sm outline-none">
-                        <input type="date" id="session-date" class="bg-slate-100 dark:bg-slate-800/40 border border-black/5 dark:border-white/5 rounded-xl p-4 text-sm outline-none">
+                    <div class="grid grid-cols-4 gap-4 mb-8">
+                        <div>
+                            <label class="text-[9px] font-bold opacity-50 uppercase px-1">Case Reference</label>
+                            <input type="text" id="session-title" placeholder="..." class="w-full rounded-xl p-4 text-sm outline-none mt-1">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-bold opacity-50 uppercase px-1">Staff</label>
+                            <input type="text" id="session-prepared" placeholder="..." class="w-full rounded-xl p-4 text-sm outline-none mt-1">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-bold opacity-50 uppercase px-1">Dept</label>
+                            <input type="text" id="session-dept" placeholder="..." class="w-full rounded-xl p-4 text-sm outline-none mt-1">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-bold opacity-50 uppercase px-1">Date</label>
+                            <input type="date" id="session-date" class="w-full rounded-xl p-4 text-sm outline-none mt-1">
+                        </div>
                     </div>
 
                     <div class="relative">
-                        <div class="absolute top-4 right-6 flex items-center gap-4 z-10 bg-white/80 dark:bg-[#1a2236]/90 backdrop-blur-xl px-4 py-2 rounded-xl border border-black/5 dark:border-white/10 shadow-sm">
-                            <button onclick="clearEditor()" class="text-[10px] font-bold text-rose-500 hover:text-rose-600 px-2 border-r border-black/10 dark:border-white/10 mr-2">
-                                <i class="fas fa-eraser mr-1"></i> CLEAR
+                        <div class="absolute top-4 right-6 flex items-center gap-4 z-10 bg-white/50 dark:bg-black/20 backdrop-blur-md px-4 py-2 rounded-xl border border-black/5 dark:border-white/10">
+                            <button onclick="clearEditor()" class="text-[10px] font-bold text-rose-600 hover:underline border-r border-black/10 dark:border-white/10 pr-4 mr-1">
+                                <i class="fas fa-trash-can mr-1"></i> CLEAR
                             </button>
-                            <span id="word-count" class="text-[10px] font-bold text-emerald-500">0 WORDS</span>
-                            <div id="v-indicator" class="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-600"></div>
+                            <span id="word-count" class="text-[10px] font-bold text-emerald-600">0 WORDS</span>
+                            <div id="v-indicator" class="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-700"></div>
                         </div>
-                        <textarea id="output" oninput="updateWordCount()" class="editor-area w-full h-[650px] p-12 text-lg outline-none" placeholder="Begin speaking..."></textarea>
+                        <textarea id="output" oninput="updateWordCount()" class="editor-area w-full h-[650px] p-12 text-lg outline-none" placeholder="Recording will appear here..."></textarea>
                     </div>
                 </div>
             </div>
         </div>
 
         <div id="view-library" class="hidden glass-card p-12 min-h-[700px]">
-            <h2 class="text-2xl font-light mb-12 uppercase tracking-widest text-emerald-500">Local Archives</h2>
-            <div id="library-list" class="grid grid-cols-1 md:grid-cols-3 gap-8"></div>
+            <h2 class="text-xl font-bold mb-8 uppercase tracking-widest text-emerald-600">Archived Records</h2>
+            <div id="library-list" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
         </div>
     </main>
 
@@ -149,14 +173,12 @@
         let recognition, isRecording = false, fullText = "", timerInterval, seconds = 0;
         let mediaRecorder, audioChunks = [];
 
-        // --- Theme Engine ---
         function toggleTheme() {
             document.body.classList.toggle('dark-mode');
             const isDark = document.body.classList.contains('dark-mode');
-            document.getElementById('theme-icon').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+            document.getElementById('theme-icon').className = isDark ? 'fas fa-sun text-xs' : 'fas fa-moon text-xs';
         }
 
-        // --- Dual Audio/Text Engine ---
         async function setupRecorder() {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorder = new MediaRecorder(stream);
@@ -166,10 +188,10 @@
                 const audioUrl = URL.createObjectURL(audioBlob);
                 const btn = document.getElementById('download-audio-btn');
                 btn.disabled = false; btn.classList.remove('opacity-30');
-                btn.classList.add('bg-emerald-500/10', 'text-emerald-600', 'border-emerald-500/20');
+                btn.classList.add('bg-emerald-600/10', 'text-emerald-700', 'border-emerald-500/20');
                 btn.onclick = () => {
                     const link = document.createElement('a'); link.href = audioUrl;
-                    link.download = `${document.getElementById('session-title').value || 'Audio'}.wav`; link.click();
+                    link.download = `${document.getElementById('session-title').value || 'Recording'}.wav`; link.click();
                 };
             };
         }
@@ -178,9 +200,9 @@
             recognition = new webkitSpeechRecognition();
             recognition.continuous = true; recognition.interimResults = true;
             recognition.onstart = () => {
-                document.getElementById('voice-status').innerText = "Recording";
-                document.getElementById('voice-status').classList.add('text-emerald-500');
-                document.getElementById('v-indicator').classList.add('bg-emerald-500');
+                document.getElementById('voice-status').innerText = "Live";
+                document.getElementById('voice-status').classList.add('text-emerald-600');
+                document.getElementById('v-indicator').classList.add('bg-emerald-600');
             };
             recognition.onresult = (e) => {
                 let interim = "";
@@ -194,7 +216,6 @@
             recognition.onend = () => { if (isRecording) recognition.start(); };
         }
 
-        // --- Controls ---
         document.getElementById('start-btn').onclick = async () => {
             if (!mediaRecorder) await setupRecorder();
             audioChunks = []; isRecording = true;
@@ -210,18 +231,10 @@
             document.getElementById('start-btn').classList.remove('hidden');
             document.getElementById('stop-btn').classList.add('hidden');
             document.getElementById('voice-status').innerText = "Standby";
-            document.getElementById('voice-status').classList.remove('text-emerald-500');
+            document.getElementById('voice-status').classList.remove('text-emerald-600');
         };
 
-        function clearEditor() {
-            if(confirm("Wipe editor content?")) {
-                document.getElementById('output').value = "";
-                fullText = "";
-                updateWordCount();
-            }
-        }
-
-        // --- Core Helpers ---
+        function clearEditor() { if(confirm("Wipe all text?")) { document.getElementById('output').value = ""; fullText = ""; updateWordCount(); } }
         function startTimer() { seconds = 0; timerInterval = setInterval(() => { seconds++; updateTimerUI(); if (seconds % 300 === 0) insertTimestamp(); }, 1000); }
         function updateTimerUI() { let h = Math.floor(seconds/3600).toString().padStart(2,'0'), m = Math.floor((seconds%3600)/60).toString().padStart(2,'0'), s = (seconds%60).toString().padStart(2,'0'); document.getElementById('timer').innerText = `${h}:${m}:${s}`; }
         function insertTimestamp() { const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); fullText += `\n\n[MARK: ${time}]\n`; document.getElementById('output').value = fullText; }
@@ -238,17 +251,29 @@
             btn.innerHTML = '<i class="fas fa-sync fa-spin"></i> SYNCING';
             const payload = { title: document.getElementById('session-title').value, staff: document.getElementById('session-prepared').value, text: document.getElementById('output').value, date: document.getElementById('session-date').value };
             fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).then(() => {
-                btn.innerHTML = '<i class="fas fa-check text-emerald-500"></i> COMPLETE';
+                btn.innerHTML = '<i class="fas fa-check text-emerald-600"></i> DONE';
                 setTimeout(() => btn.innerHTML = original, 2000);
             });
         }
 
-        // --- Database ---
-        let db; const request = indexedDB.open("BABRN_THEME_DB", 1);
+        let db; const request = indexedDB.open("BABRN_COMFORT_DB", 1);
         request.onupgradeneeded = e => e.target.result.createObjectStore("sessions", { keyPath: "id" });
         request.onsuccess = e => { db = e.target.result; document.getElementById('session-date').valueAsDate = new Date(); loadLibrary(); };
         function saveToLocal() { const data = { id: Date.now(), title: document.getElementById('session-title').value || "Untitled", staff: document.getElementById('session-prepared').value || "N/A", date: document.getElementById('session-date').value, text: document.getElementById('output').value }; db.transaction("sessions", "readwrite").objectStore("sessions").add(data); loadLibrary(); }
-        function loadLibrary() { /* Library loading logic */ }
+        function loadLibrary() {
+            const list = document.getElementById('library-list'); list.innerHTML = "";
+            db.transaction("sessions", "readonly").objectStore("sessions").openCursor(null, 'prev').onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    const div = document.createElement('div');
+                    div.className = "glass-card p-6 flex justify-between items-center hover:border-emerald-500/30 transition-all cursor-pointer";
+                    div.innerHTML = `<div onclick="openEntry(${cursor.value.id})" class="flex-1"><h3 class="font-bold text-xs uppercase opacity-80">${cursor.value.title}</h3><p class="text-[9px] opacity-50 mt-1 uppercase tracking-widest">${cursor.value.date}</p></div><button onclick="deleteEntry(${cursor.value.id})" class="opacity-40 hover:opacity-100 text-rose-600 p-2"><i class="fas fa-trash-alt"></i></button>`;
+                    list.appendChild(div); cursor.continue();
+                }
+            };
+        }
+        function openEntry(id) { db.transaction("sessions", "readonly").objectStore("sessions").get(id).onsuccess = (e) => { const d = e.target.result; document.getElementById('output').value = d.text; document.getElementById('session-title').value = d.title; document.getElementById('session-prepared').value = d.staff; document.getElementById('session-date').value = d.date; fullText = d.text; updateWordCount(); switchTab('recorder'); }; }
+        function deleteEntry(id) { if(confirm("Delete record?")) { db.transaction("sessions", "readwrite").objectStore("sessions").delete(id); loadLibrary(); } }
         function switchTab(t) { document.getElementById('view-recorder').classList.toggle('hidden', t !== 'recorder'); document.getElementById('view-library').classList.toggle('hidden', t !== 'library'); }
         function updateWordCount() { const val = document.getElementById('output').value.trim(); document.getElementById('word-count').innerText = (val ? val.split(/\s+/).length : 0) + " WORDS"; }
     </script>
