@@ -3,125 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BABRN Turbo | Auto-Healing</title>
+    <title>BABRN Turbo | Professional Archive</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=JetBrains+Mono&display=swap');
+        body { font-family: 'Plus+Jakarta+Sans', sans-serif; background: #0f172a; color: #f8fafc; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        .medical-canvas { font-family: 'JetBrains Mono', monospace; background: #1e293b; color: #e2e8f0; line-height: 1.8; border: 1px solid #334155; }
+        .input-accent { background: #1e293b; border: 1px solid #334155; color: white; transition: all 0.3s; }
+        .input-accent:focus { border-color: #10b981; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); outline: none; }
+        .btn-emerald { background: linear-gradient(135deg, #10b981 0%, #059669 100%); transition: transform 0.2s; }
+        .btn-emerald:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+        .active-tab { color: #10b981; border-bottom: 3px solid #10b981; }
         
-        :root {
-            --bg-body: #0f172a;
-            --bg-glass: rgba(30, 41, 59, 0.7);
-            --text-main: #f8fafc;
-            --accent: #10b981;
-            --input-bg: #1e293b;
-            --border: rgba(255,255,255,0.1);
-            --nav-bg: #002b5c; 
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; color: black; }
+            .medical-canvas { background: white; color: black; border: none; height: auto !important; }
+            .print-header { display: block !important; border-bottom: 2px solid black; margin-bottom: 20px; padding-bottom: 10px; }
         }
-
-        body.theme-light {
-            --bg-body: #f1f5f9;
-            --bg-glass: rgba(255, 255, 255, 0.6); 
-            --text-main: #001f3f; 
-            --accent: #059669; 
-            --input-bg: rgba(255, 255, 255, 0.8);
-            --border: rgba(0, 31, 63, 0.1);
-            --nav-bg: #001f3f; 
-        }
-
-        body { font-family: 'Plus+Jakarta+Sans', sans-serif; background: var(--bg-body); color: var(--text-main); transition: all 0.3s ease; }
-        .glass-panel { background: var(--bg-glass); backdrop-filter: blur(15px); border: 1px solid var(--border); }
-        .medical-canvas { font-family: 'JetBrains Mono', monospace; background: var(--input-bg); color: var(--text-main); line-height: 1.8; border: 1px solid var(--border); }
-        .input-accent { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); font-weight: 600; }
-        .nav-custom { background: var(--nav-bg); color: white; }
-        .word-badge { background: var(--accent); color: white; padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; }
-        
-        /* Pulse for active recording */
-        .rec-active { box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); border: 2px solid #ef4444; }
+        .print-header { display: none; }
     </style>
 </head>
 <body class="min-h-screen pb-10">
 
-    <nav class="nav-custom no-print sticky top-0 z-50 px-6 py-4 mb-8 flex justify-between items-center shadow-lg">
+    <div class="print-header">
+        <h1 style="font-size: 24px; font-weight: bold; text-transform: uppercase;">BABRN Session Transcript</h1>
+        <div id="print-meta" style="margin-top: 10px; font-size: 12px;"></div>
+    </div>
+
+    <nav class="glass-panel no-print sticky top-0 z-50 px-6 py-4 mb-8 flex justify-between items-center border-b border-slate-700">
         <div class="flex items-center gap-3">
-            <div class="bg-emerald-500 p-2 rounded-lg"><i class="fas fa-bolt text-white"></i></div>
-            <h1 class="text-xl font-bold uppercase">BABRN <span class="text-emerald-400">Turbo</span></h1>
+            <div class="bg-emerald-500 p-2 rounded-lg"><i class="fas fa-microphone-alt text-white"></i></div>
+            <h1 class="text-xl font-bold tracking-tighter uppercase">BABRN <span class="text-emerald-500">Turbo</span></h1>
         </div>
-        <div class="flex gap-3 bg-white/10 p-1.5 rounded-full">
-            <button onclick="setTheme('dark')" class="w-6 h-6 rounded-full bg-slate-900 border border-white/20"></button>
-            <button onclick="setTheme('light')" class="w-6 h-6 rounded-full bg-slate-100 border border-black/20"></button>
-        </div>
-        <div class="flex gap-6 text-xs font-bold uppercase">
-            <button onclick="switchTab('recorder')" id="tab-recorder" class="py-1 border-b-2 border-emerald-400">Editor</button>
-            <button onclick="switchTab('library')" id="tab-library" class="opacity-70 py-1">Archives</button>
+        <div class="flex gap-8 text-xs font-bold uppercase tracking-widest">
+            <button onclick="switchTab('recorder')" id="tab-recorder" class="active-tab py-2">Editor</button>
+            <button onclick="switchTab('library')" id="tab-library" class="text-slate-400 hover:text-emerald-400 py-2">Archives</button>
         </div>
     </nav>
 
     <div class="max-w-7xl mx-auto px-4">
         <div id="view-recorder" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div class="lg:col-span-3 space-y-4 no-print">
-                <div class="glass-panel p-6 rounded-3xl">
-                    <button id="start-btn" class="w-full font-bold py-4 rounded-2xl mb-4 uppercase flex items-center justify-center gap-2" style="background: var(--accent); color: white;">
-                        <i class="fas fa-play"></i> Start Record
+            
+            <div class="no-print lg:col-span-3 space-y-6">
+                <div class="glass-panel p-6 rounded-3xl shadow-2xl">
+                    <button id="start-btn" class="w-full btn-emerald text-white font-bold py-4 rounded-2xl mb-4 uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg">
+                        <i class="fas fa-play"></i> Start Recording
                     </button>
-                    <button id="stop-btn" class="hidden w-full bg-red-600 text-white font-bold py-4 rounded-2xl mb-4 animate-pulse uppercase flex items-center justify-center gap-2">
-                        <i class="fas fa-stop"></i> Stop & Save
+                    <button id="stop-btn" class="hidden w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-2xl mb-4 animate-pulse uppercase tracking-widest">
+                        <i class="fas fa-stop mr-2"></i> Stop & Save
                     </button>
-                    
-                    <div id="status-pill" class="text-[9px] text-center font-bold py-1 px-3 rounded-full bg-black/20 mb-4 opacity-50 uppercase">Ready</div>
 
-                    <div class="space-y-3 pt-4 border-t border-white/10">
-                        <button onclick="copyAllText()" class="w-full py-3 rounded-xl text-[10px] font-bold uppercase border border-white/10 hover:bg-black/5"><i class="fas fa-copy mr-2"></i> Copy</button>
-                        <button onclick="syncToGoogle()" id="cloud-btn" class="w-full bg-blue-700 text-white font-bold py-4 rounded-xl text-[10px] uppercase shadow-lg">Sync Cloud</button>
+                    <div id="audio-replay-container" class="hidden mb-6 p-4 bg-slate-800 rounded-2xl border border-slate-700">
+                        <p class="text-[10px] font-bold text-emerald-400 mb-2 uppercase">Audio Session Replay</p>
+                        <audio id="audio-player" controls class="w-full h-8"></audio>
+                    </div>
+
+                    <div class="space-y-3 pt-4 border-t border-slate-700">
+                        <button onclick="copyAllText()" class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-2 border border-slate-600 transition-all">
+                            <i class="fas fa-copy"></i> Copy To Clipboard
+                        </button>
+                        <button onclick="generatePrint()" class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-2 border border-slate-600 transition-all">
+                            <i class="fas fa-print"></i> Print / PDF
+                        </button>
+                        <button onclick="syncToGoogle()" id="cloud-btn" class="w-full bg-blue-600 hover:bg-blue-700 py-4 rounded-xl text-[10px] font-extrabold uppercase flex items-center justify-center gap-2 shadow-lg mt-4">
+                            <i class="fas fa-cloud-upload-alt"></i> Sync To Cloud
+                        </button>
                     </div>
                 </div>
+
+                <button onclick="prepareNewSession()" class="w-full bg-slate-800 border border-emerald-500/30 text-emerald-400 font-bold py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-emerald-500/10 transition-colors">
+                    <i class="fas fa-plus"></i> NEW SESSION
+                </button>
             </div>
 
             <div class="lg:col-span-9">
-                <div class="glass-panel rounded-3xl p-8 shadow-xl">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                        <input type="text" id="session-prepared-by" placeholder="Staff" class="input-accent p-3 rounded-xl text-xs">
-                        <input type="text" id="session-dept" placeholder="Dept" class="input-accent p-3 rounded-xl text-xs">
-                        <input type="text" id="session-title" placeholder="Title" class="input-accent p-3 rounded-xl text-xs">
-                        <input type="date" id="session-date-picker" class="input-accent p-3 rounded-xl text-xs">
+                <div class="glass-panel rounded-3xl p-8 shadow-2xl">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase mb-2 block">Prepared By</label>
+                            <input type="text" id="session-prepared-by" placeholder="Enter Name..." class="input-accent w-full p-3 rounded-xl text-sm">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase mb-2 block">Department</label>
+                            <input type="text" id="session-dept" placeholder="Dept Name..." class="input-accent w-full p-3 rounded-xl text-sm">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase mb-2 block">Title</label>
+                            <input type="text" id="session-title" placeholder="Session Title..." class="input-accent w-full p-3 rounded-xl text-sm">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase mb-2 block">Date</label>
+                            <input type="date" id="session-date-picker" class="input-accent w-full p-3 rounded-xl text-sm">
+                        </div>
                     </div>
 
-                    <div class="flex justify-between items-center mb-2 px-2">
-                        <div class="flex gap-4">
-                             <button onclick="insertTimestamp()" class="text-[10px] font-bold flex items-center gap-2" style="color: var(--accent)"><i class="fas fa-clock"></i> TIMESTAMP</button>
-                             <button onclick="clearEditor()" class="text-[10px] font-bold text-red-400 flex items-center gap-2"><i class="fas fa-eraser"></i> CLEAR</button>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-[10px] font-bold opacity-60 uppercase">Words:</span>
-                            <span id="word-count" class="word-badge">0</span>
-                        </div>
+                    <div class="no-print flex justify-between items-center mb-4 px-2">
+                        <button onclick="insertTimestamp()" class="text-[10px] font-bold text-emerald-400 flex items-center gap-2 hover:opacity-80">
+                            <i class="fas fa-clock"></i> INSERT TIMESTAMP
+                        </button>
+                        <span id="save-status" class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest"></span>
                     </div>
 
-                    <textarea id="output" oninput="updateWordCount()" class="medical-canvas w-full h-[550px] p-8 rounded-2xl text-lg focus:outline-none resize-none shadow-inner" placeholder="Transcription..."></textarea>
+                    <textarea id="output" class="medical-canvas w-full h-[550px] p-8 rounded-2xl text-lg focus:outline-none resize-none" placeholder="Transcription will appear here..."></textarea>
                 </div>
+            </div>
+        </div>
+
+        <div id="view-library" class="hidden no-print">
+            <div class="glass-panel rounded-3xl p-8 min-h-[600px]">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
+                    <h2 class="text-2xl font-bold uppercase flex items-center gap-3">Archives</h2>
+                    <div class="relative w-full md:w-96">
+                        <i class="fas fa-search absolute left-4 top-4 text-slate-500"></i>
+                        <input type="text" id="library-search" oninput="loadLibrary()" placeholder="Filter records..." class="input-accent w-full pl-12 pr-4 py-3 rounded-2xl">
+                    </div>
+                </div>
+                <div id="library-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </div>
         </div>
     </div>
 
     <script>
+        // UPDATED WITH YOUR PROVIDED URL
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby6ZIAuBnLUogVY6UxY-4TNb3Zy7iRCVi56UtpfkLg79LXbiTo97PnroSo96lvBS3FF/exec";
-        let db, mediaRecorder, chunks = [], finalTranscript = "", isRecording = false;
 
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.continuous = true; 
-        recognition.interimResults = true; 
-        recognition.lang = 'en-US'; 
+        let db, mediaRecorder, chunks = [], finalTranscript = "", currentEntryId = null;
 
-        // AUTO-RESTART LOGIC
-        recognition.onend = () => {
-            if (isRecording) {
-                console.log("Sudden stop detected. Restarting engine...");
-                recognition.start(); // This forces it back on
-                updateStatus("Auto-Restarting...", "text-yellow-500");
-            } else {
-                updateStatus("Ready", "opacity-50");
-            }
-        };
+        const request = indexedDB.open("BABRN_Final_V5", 1);
+        request.onupgradeneeded = e => { e.target.result.createObjectStore("sessions", { keyPath: "id" }); };
+        request.onsuccess = e => { db = e.target.result; document.getElementById('session-date-picker').valueAsDate = new Date(); loadLibrary(); };
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'fil-PH';
 
         recognition.onresult = (e) => {
             let interim = "";
@@ -130,51 +149,50 @@
                 else interim += e.results[i][0].transcript;
             }
             document.getElementById('output').value = finalTranscript + interim;
-            updateWordCount();
-            const out = document.getElementById('output');
-            out.scrollTop = out.scrollHeight;
-            updateStatus("Capturing Live", "text-emerald-500 font-bold");
+            document.getElementById('output').scrollTop = document.getElementById('output').scrollHeight;
         };
 
-        document.getElementById('start-btn').onclick = () => {
-            isRecording = true;
-            finalTranscript = document.getElementById('output').value; // Keep existing text
-            recognition.start();
+        document.getElementById('start-btn').onclick = async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            chunks = [];
+            mediaRecorder.ondataavailable = e => chunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                saveToLocal(audioBlob);
+                stream.getTracks().forEach(t => t.stop());
+            };
+            mediaRecorder.start(); recognition.start();
             document.getElementById('start-btn').classList.add('hidden');
             document.getElementById('stop-btn').classList.remove('hidden');
-            updateStatus("Listening...", "text-emerald-500");
         };
 
         document.getElementById('stop-btn').onclick = () => {
-            isRecording = false;
-            recognition.stop();
+            mediaRecorder.stop(); recognition.stop();
             document.getElementById('start-btn').classList.remove('hidden');
             document.getElementById('stop-btn').classList.add('hidden');
-            updateStatus("Ready", "opacity-50");
         };
 
-        function updateStatus(msg, cls) {
-            const s = document.getElementById('status-pill');
-            s.innerText = msg;
-            s.className = `text-[9px] text-center py-1 px-3 rounded-full bg-black/20 mb-4 uppercase ${cls}`;
+        function saveToLocal(audioBlob) {
+            const payload = {
+                id: Date.now(),
+                title: document.getElementById('session-title').value || "Untitled",
+                dept: document.getElementById('session-dept').value || "General",
+                preparedBy: document.getElementById('session-prepared-by').value || "Staff",
+                sessionDate: document.getElementById('session-date-picker').value,
+                text: document.getElementById('output').value,
+                audio: audioBlob
+            };
+            const tx = db.transaction("sessions", "readwrite");
+            tx.objectStore("sessions").add(payload);
+            currentEntryId = payload.id;
+            loadAudioPlayer(audioBlob);
+            statusMsg("✓ STORED LOCALLY");
         }
 
-        function updateWordCount() {
-            const text = document.getElementById('output').value.trim();
-            document.getElementById('word-count').innerText = text ? text.split(/\s+/).length : 0;
-        }
-
-        function setTheme(theme) {
-            document.body.className = theme === 'light' ? 'theme-light' : '';
-            localStorage.setItem('babrn-theme', theme);
-        }
-        setTheme(localStorage.getItem('babrn-theme') || 'dark');
-
-        function insertTimestamp() { document.getElementById('output').value += `\n[${new Date().toLocaleTimeString()}] `; }
-        function copyAllText() { navigator.clipboard.writeText(document.getElementById('output').value); alert("Copied!"); }
-        function clearEditor() { if(confirm("Clear all text?")) { document.getElementById('output').value = ""; finalTranscript = ""; updateWordCount(); } }
         async function syncToGoogle() {
-            const btn = document.getElementById('cloud-btn'); btn.innerText = "SYNCING...";
+            const btn = document.getElementById('cloud-btn');
+            btn.innerText = "UPLOADING...";
             const payload = {
                 title: document.getElementById('session-title').value,
                 department: document.getElementById('session-dept').value,
@@ -183,9 +201,78 @@
                 text: document.getElementById('output').value
             };
             fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
-            .then(() => { alert("Done!"); btn.innerText = "Sync Cloud"; });
+            .then(() => { alert("Google Sheets Updated!"); btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Sync To Cloud'; })
+            .catch(() => alert("Cloud Sync Failed"));
         }
-        document.getElementById('session-date-picker').valueAsDate = new Date();
+
+        function generatePrint() {
+            const meta = `
+                <b>Title:</b> ${document.getElementById('session-title').value}<br>
+                <b>Dept:</b> ${document.getElementById('session-dept').value}<br>
+                <b>Prepared By:</b> ${document.getElementById('session-prepared-by').value}<br>
+                <b>Date:</b> ${document.getElementById('session-date-picker').value}
+            `;
+            document.getElementById('print-meta').innerHTML = meta;
+            window.print();
+        }
+
+        function loadLibrary() {
+            const list = document.getElementById('library-list');
+            const search = document.getElementById('library-search').value.toLowerCase();
+            list.innerHTML = "";
+            db.transaction("sessions", "readonly").objectStore("sessions").openCursor(null, 'prev').onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    if (cursor.value.title.toLowerCase().includes(search) || cursor.value.dept.toLowerCase().includes(search)) {
+                        const div = document.createElement('div');
+                        div.className = "glass-panel p-6 rounded-2xl hover:border-emerald-500/50 transition-all";
+                        div.innerHTML = `
+                            <div class="mb-3"><span class="text-[8px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-md font-bold uppercase tracking-widest">${cursor.value.dept}</span></div>
+                            <h3 class="font-bold text-sm uppercase mb-1">${cursor.value.title}</h3>
+                            <p class="text-[9px] text-slate-500 mb-4 uppercase">By: ${cursor.value.preparedBy} • ${cursor.value.sessionDate}</p>
+                            <div class="flex gap-2">
+                                <button onclick="openEntry(${cursor.value.id})" class="flex-1 bg-slate-700 py-2 rounded-xl text-[10px] font-bold">OPEN</button>
+                                <button onclick="deleteEntry(${cursor.value.id})" class="px-3 bg-red-900/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"><i class="fas fa-trash"></i></button>
+                            </div>
+                        `;
+                        list.appendChild(div);
+                    }
+                    cursor.continue();
+                }
+            };
+        }
+
+        function openEntry(id) {
+            db.transaction("sessions", "readonly").objectStore("sessions").get(id).onsuccess = (e) => {
+                const doc = e.target.result;
+                document.getElementById('output').value = doc.text;
+                document.getElementById('session-title').value = doc.title;
+                document.getElementById('session-dept').value = doc.dept;
+                document.getElementById('session-prepared-by').value = doc.preparedBy;
+                document.getElementById('session-date-picker').value = doc.sessionDate;
+                finalTranscript = doc.text;
+                currentEntryId = id;
+                loadAudioPlayer(doc.audio);
+                switchTab('recorder');
+            };
+        }
+
+        function loadAudioPlayer(blob) {
+            if(!blob) return;
+            document.getElementById('audio-player').src = URL.createObjectURL(blob);
+            document.getElementById('audio-replay-container').classList.remove('hidden');
+        }
+
+        function deleteEntry(id) { if(confirm("Delete this record?")) { db.transaction("sessions", "readwrite").objectStore("sessions").delete(id); loadLibrary(); } }
+        function copyAllText() { navigator.clipboard.writeText(document.getElementById('output').value); alert("Text copied!"); }
+        function statusMsg(m) { const s = document.getElementById('save-status'); s.innerText = m; setTimeout(()=>s.innerText="", 3000); }
+        function insertTimestamp() { const out = document.getElementById('output'); out.value += `\n[${new Date().toLocaleTimeString()}] `; finalTranscript = out.value; }
+        function switchTab(t) {
+            document.getElementById('view-recorder').classList.toggle('hidden', t !== 'recorder');
+            document.getElementById('view-library').classList.toggle('hidden', t !== 'library');
+            if(t === 'library') loadLibrary();
+        }
+        function prepareNewSession() { if(confirm("Discard current and start new?")) location.reload(); }
     </script>
 </body>
 </html>
