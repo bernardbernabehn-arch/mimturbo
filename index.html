@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BABRN Turbo | Professional Archive</title>
+    <title>BABRN Turbo | Live Infinite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -20,26 +20,24 @@
 
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-body); color: var(--text-main); }
         .glass-panel { background: var(--bg-glass); backdrop-filter: blur(15px); border: 1px solid var(--border); }
-        .medical-canvas { font-family: 'JetBrains Mono', monospace; background: var(--input-bg); color: var(--text-main); line-height: 1.8; border: 1px solid var(--border); }
+        .medical-canvas { font-family: 'JetBrains Mono', monospace; background: var(--input-bg); color: var(--text-main); line-height: 1.8; border: 1px solid var(--border); border-radius: 24px; }
         
-        .rec-active { animation: pulse-glow 2s infinite; background: #ef4444 !important; }
-        @keyframes pulse-glow {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            70% { transform: scale(1.02); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        .pulse-emerald { animation: pulse-emerald 2s infinite; }
+        @keyframes pulse-emerald {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
-
-        select { background-image: none !important; }
     </style>
 </head>
 <body class="min-h-screen pb-10">
 
     <nav class="bg-[#001f3f] text-white px-6 py-4 mb-8 flex justify-between items-center shadow-2xl border-b border-emerald-500/30">
         <div class="flex items-center gap-3">
-            <div class="bg-emerald-500 p-2 rounded-lg shadow-lg"><i class="fas fa-file-waveform text-white"></i></div>
+            <div class="bg-emerald-500 p-2 rounded-lg shadow-lg"><i class="fas fa-keyboard text-white"></i></div>
             <h1 class="text-xl font-bold uppercase tracking-tighter">BABRN <span class="text-emerald-400">Turbo</span></h1>
         </div>
-        <div id="status-pill" class="text-[10px] font-black bg-emerald-500/10 text-emerald-400 px-4 py-1.5 rounded-full border border-emerald-500/20 uppercase tracking-widest">System Ready</div>
+        <div id="status-pill" class="text-[10px] font-black bg-emerald-500/10 text-emerald-400 px-4 py-1.5 rounded-full border border-emerald-500/20 uppercase tracking-widest">Mic Idle</div>
     </nav>
 
     <div class="max-w-7xl mx-auto px-4">
@@ -49,128 +47,123 @@
                 <div class="glass-panel p-6 rounded-3xl shadow-xl">
                     <div id="timer" class="text-5xl font-black mb-6 font-mono text-center tracking-tighter">00:00</div>
                     
-                    <button id="master-btn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-5 rounded-2xl mb-4 uppercase tracking-widest flex items-center justify-center gap-3 transition-all">
-                        <i class="fas fa-play"></i> Start Recording
+                    <button id="start-btn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-5 rounded-2xl mb-4 uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-lg">
+                        <i class="fas fa-microphone"></i> Start Transcribing
                     </button>
 
-                    <div id="audio-container" class="hidden space-y-3 p-4 bg-white/5 rounded-2xl border border-white/10 mb-4">
-                        <audio id="audio-playback" controls class="w-full h-8"></audio>
-                        <div class="flex items-center justify-between">
-                            <label class="text-[10px] font-bold uppercase opacity-60">Playback Speed</label>
-                            <select id="speed-control" class="bg-slate-800 text-[10px] font-bold px-2 py-1 rounded border border-white/20">
-                                <option value="0.5">0.5x</option>
-                                <option value="1.0" selected>1.0x (Normal)</option>
-                                <option value="1.5">1.5x</option>
-                                <option value="2.0">2.0x</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div id="loader" class="hidden py-4 text-center">
-                        <i class="fas fa-spinner fa-spin text-emerald-400 mb-2"></i>
-                        <p class="text-[10px] font-bold uppercase text-emerald-400 tracking-widest">Processing Words...</p>
-                    </div>
+                    <button id="stop-btn" class="hidden w-full bg-red-600 text-white font-bold py-5 rounded-2xl mb-4 uppercase tracking-widest flex items-center justify-center gap-3 transition-all">
+                        <i class="fas fa-save"></i> Stop & Finish
+                    </button>
 
                     <div class="pt-6 border-t border-white/10 space-y-3">
-                        <button onclick="copyText()" class="w-full py-3 rounded-xl text-[10px] font-bold uppercase border border-white/10 hover:bg-white/5">Copy Transcription</button>
-                        <button onclick="downloadAudio()" id="dl-btn" class="hidden w-full py-3 rounded-xl text-[10px] font-bold uppercase bg-slate-700 hover:bg-slate-600">Download Audio</button>
-                        <button onclick="syncToCloud()" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-4 rounded-xl text-[10px] uppercase shadow-lg">Sync Cloud</button>
+                        <div class="flex justify-between text-[10px] font-bold uppercase opacity-50 mb-2">
+                            <span>Auto-Save every 5m</span>
+                            <span class="text-emerald-400">Active</span>
+                        </div>
+                        <button onclick="copyText()" class="w-full py-3 rounded-xl text-[10px] font-bold uppercase border border-white/10 hover:bg-white/5">Copy Everything</button>
+                        <button onclick="window.print()" class="w-full py-3 rounded-xl text-[10px] font-bold uppercase border border-white/10 hover:bg-white/5">Export PDF</button>
                     </div>
+                </div>
+
+                <div class="p-4 glass-panel rounded-2xl border-l-4 border-emerald-500">
+                    <p class="text-[9px] font-bold uppercase text-emerald-400 mb-1">Live Buffer Active</p>
+                    <p class="text-[9px] opacity-70 leading-relaxed">Words are appearing in real-time. The system is automatically preventing the microphone from timing out.</p>
                 </div>
             </div>
 
             <div class="lg:col-span-9">
-                <div class="glass-panel rounded-3xl p-8 shadow-2xl relative">
-                    <div class="flex justify-between items-center mb-6">
-                        <div class="text-[10px] font-bold uppercase opacity-50">Word Count: <span id="word-count" class="text-emerald-400">0</span></div>
-                        <button onclick="insertTime()" class="text-[10px] font-bold text-emerald-400 hover:opacity-80">+ TIMESTAMP</button>
+                <div class="glass-panel rounded-[32px] p-1 shadow-2xl">
+                    <div class="flex justify-between items-center p-6 border-b border-white/5">
+                        <div class="flex gap-4 items-center">
+                            <span class="text-[10px] font-bold uppercase opacity-40">Live Status:</span>
+                            <div id="live-dot" class="w-2 h-2 rounded-full bg-slate-600"></div>
+                            <span id="word-count" class="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-[10px] font-bold">0 WORDS</span>
+                        </div>
+                        <button onclick="insertTime()" class="text-[10px] font-bold text-emerald-400 hover:text-emerald-300">
+                            <i class="fas fa-clock mr-1"></i> TIMESTAMP
+                        </button>
                     </div>
 
                     <textarea id="output" 
-                        class="medical-canvas w-full h-[580px] p-10 rounded-2xl text-lg focus:outline-none resize-none shadow-inner" 
-                        placeholder="Audio recording will be converted to text here..."></textarea>
+                        oninput="updateWordCount()"
+                        class="medical-canvas w-full h-[650px] p-10 text-xl focus:outline-none resize-none" 
+                        placeholder="Start speaking... your words will appear here immediately."></textarea>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const SCRIPT_URL = "YOUR_GOOGLE_SCRIPT_URL";
-        let mediaRecorder, audioChunks = [], isRecording = false, startTime, timerInterval, audioBlob;
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby6ZIAuBnLUogVY6UxY-4TNb3Zy7iRCVi56UtpfkLg79LXbiTo97PnroSo96lvBS3FF/exec";
+        
+        let recognition;
+        let isRecording = false;
+        let finalTranscript = "";
+        let startTime, timerInterval, autoSaveTimer;
 
-        const masterBtn = document.getElementById('master-btn');
-        const timerDisplay = document.getElementById('timer');
-        const statusPill = document.getElementById('status-pill');
-        const audioPlayer = document.getElementById('audio-playback');
-        const speedControl = document.getElementById('speed-control');
-
-        // Audio Speed Control Logic
-        speedControl.addEventListener('change', () => {
-            audioPlayer.playbackRate = parseFloat(speedControl.value);
-        });
-
-        masterBtn.onclick = async () => {
-            if (!isRecording) {
-                // START RECORDING
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
-                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                mediaRecorder.onstop = () => {
-                    audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
-                    const audioUrl = URL.createObjectURL(audioBlob);
-                    audioPlayer.src = audioUrl;
-                    document.getElementById('audio-container').classList.remove('hidden');
-                    document.getElementById('dl-btn').classList.remove('hidden');
-                    handleTranscription();
-                    stream.getTracks().forEach(t => t.stop());
-                };
-
-                mediaRecorder.start();
-                startTimer();
-                isRecording = true;
-                masterBtn.innerHTML = '<i class="fas fa-square"></i> Finish & Transcribe';
-                masterBtn.classList.add('rec-active');
-                statusPill.innerText = "RECORDING AUDIO";
-                statusPill.classList.add('bg-red-500/20', 'text-red-400');
-            } else {
-                // STOP RECORDING
-                mediaRecorder.stop();
-                clearInterval(timerInterval);
-                isRecording = false;
-                masterBtn.classList.add('hidden');
-                document.getElementById('loader').classList.remove('hidden');
-                statusPill.innerText = "CONVERTING...";
-            }
-        };
-
-        function handleTranscription() {
-            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.lang = 'en-US';
+        // THE CORE ENGINE
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
             recognition.continuous = true;
             recognition.interimResults = true;
-            let fullText = document.getElementById('output').value;
+            recognition.lang = 'en-US';
 
-            recognition.onresult = (e) => {
-                let interim = "";
-                for (let i = e.resultIndex; i < e.results.length; ++i) {
-                    if (e.results[i].isFinal) fullText += e.results[i][0].transcript + " ";
-                    else interim += e.results[i][0].transcript;
+            recognition.onstart = () => {
+                document.getElementById('live-dot').classList.add('bg-emerald-500', 'pulse-emerald');
+                document.getElementById('status-pill').innerText = "LIVE TRANSCRIPTION";
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = "";
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript + " ";
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
                 }
-                document.getElementById('output').value = fullText + interim;
+                document.getElementById('output').value = finalTranscript + interimTranscript;
                 updateWordCount();
+                // Auto-Scroll
+                const textarea = document.getElementById('output');
+                textarea.scrollTop = textarea.scrollHeight;
             };
 
+            // THE INFINITE HEARTBEAT: If mic stops, restart it instantly
             recognition.onend = () => {
-                document.getElementById('loader').classList.add('hidden');
-                masterBtn.classList.remove('hidden');
-                masterBtn.innerHTML = '<i class="fas fa-play"></i> Start New Session';
-                masterBtn.classList.remove('rec-active');
-                statusPill.innerText = "DONE";
-                localStorage.setItem('babrn_cache', document.getElementById('output').value);
+                if (isRecording) {
+                    recognition.start();
+                    console.log("Mic Heartbeat: Restarted successfully.");
+                } else {
+                    document.getElementById('live-dot').classList.remove('bg-emerald-500', 'pulse-emerald');
+                    document.getElementById('status-pill').innerText = "Mic Idle";
+                }
             };
-            recognition.start();
         }
+
+        document.getElementById('start-btn').onclick = () => {
+            isRecording = true;
+            finalTranscript = document.getElementById('output').value; // Don't wipe existing text
+            recognition.start();
+            startTimer();
+            
+            // Start 5-Minute Auto-Save Heartbeat
+            autoSaveTimer = setInterval(syncToCloud, 300000); 
+
+            document.getElementById('start-btn').classList.add('hidden');
+            document.getElementById('stop-btn').classList.remove('hidden');
+        };
+
+        document.getElementById('stop-btn').onclick = () => {
+            isRecording = false;
+            recognition.stop();
+            clearInterval(timerInterval);
+            clearInterval(autoSaveTimer);
+            
+            document.getElementById('start-btn').classList.remove('hidden');
+            document.getElementById('stop-btn').classList.add('hidden');
+            syncToCloud(); // Final sync
+        };
 
         function startTimer() {
             startTime = Date.now();
@@ -178,31 +171,34 @@
                 const diff = Math.floor((Date.now() - startTime) / 1000);
                 const m = Math.floor(diff / 60).toString().padStart(2, '0');
                 const s = (diff % 60).toString().padStart(2, '0');
-                timerDisplay.innerText = `${m}:${s}`;
+                document.getElementById('timer').innerText = `${m}:${s}`;
             }, 1000);
-        }
-
-        function downloadAudio() {
-            const a = document.createElement("a");
-            a.href = audioPlayer.src;
-            a.download = `BABRN-Audio-${Date.now()}.mp3`;
-            a.click();
         }
 
         function updateWordCount() {
             const text = document.getElementById('output').value.trim();
-            document.getElementById('word-count').innerText = text ? text.split(/\s+/).length : 0;
+            const count = text ? text.split(/\s+/).length : 0;
+            document.getElementById('word-count').innerText = `${count} WORDS`;
         }
 
-        function insertTime() { document.getElementById('output').value += `\n[${new Date().toLocaleTimeString()}] `; }
-        function copyText() { navigator.clipboard.writeText(document.getElementById('output').value); alert("Copied!"); }
+        function insertTime() {
+            const area = document.getElementById('output');
+            area.value += `\n[${new Date().toLocaleTimeString()}] `;
+            finalTranscript = area.value;
+        }
+
+        function copyText() {
+            navigator.clipboard.writeText(document.getElementById('output').value);
+            alert("All text copied to clipboard!");
+        }
 
         async function syncToCloud() {
-            const btn = event.target;
-            btn.innerText = "SYNCING...";
-            const payload = { text: document.getElementById('output').value };
+            const payload = { 
+                text: document.getElementById('output').value,
+                timestamp: new Date().toLocaleString()
+            };
             fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
-            .then(() => { btn.innerText = "SYNC CLOUD"; alert("Cloud Updated!"); });
+            .then(() => console.log("Auto-Save: Success"));
         }
     </script>
 </body>
