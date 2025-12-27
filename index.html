@@ -117,16 +117,15 @@
                         <div id="timer" class="text-5xl font-light tracking-tighter mt-2 font-mono text-slate-500">00:00:00</div>
                     </div>
 
-                    <div id="audio-container" class="hidden mb-6 p-4 bg-emerald-600/5 rounded-2xl border border-emerald-500/10">
-                        <label class="text-[9px] font-bold opacity-40 uppercase block mb-2 text-center">Session Playback</label>
+                    <div id="audio-container" class="hidden mb-6 p-4 bg-emerald-600/10 rounded-2xl border-2 border-emerald-500/20">
+                        <label class="text-[9px] font-bold opacity-60 uppercase block mb-2 text-center">Session Playback</label>
                         <audio id="audio-player" controls class="w-full h-8 mb-3"></audio>
                         <div class="flex items-center justify-between px-1">
                              <label class="text-[9px] font-bold opacity-60 uppercase">Speed</label>
-                             <select id="playback-speed" onchange="changeSpeed()" class="text-[10px] font-bold bg-transparent outline-none cursor-pointer rounded-lg px-2 py-1">
+                             <select id="playback-speed" onchange="changeSpeed()" class="text-[10px] font-bold bg-transparent outline-none cursor-pointer">
                                  <option value="0.5">0.5x</option>
                                  <option value="0.8">0.8x</option>
                                  <option value="1" selected>Normal</option>
-                                 <option value="1.2">1.2x</option>
                                  <option value="1.5">1.5x</option>
                                  <option value="2">2x</option>
                              </select>
@@ -149,7 +148,7 @@
                             <i class="fas fa-file-word"></i> Word Report
                         </button>
                         <button onclick="syncToGoogle()" id="cloud-btn" class="w-full py-4 text-[10px] font-bold uppercase border border-slate-400/20 rounded-xl flex items-center justify-center gap-3 transition-all">
-                            <i class="fas fa-cloud"></i> Sync to Cloud
+                            <i class="fas fa-cloud"></i> Google Sheets
                         </button>
                     </div>
                 </div>
@@ -197,7 +196,9 @@
     </main>
 
     <script>
-        const SCRIPT_URL = "YOUR_GOOGLE_SCRIPT_URL_HERE";
+        // REPLACE WITH YOUR ORIGINAL SCRIPT URL
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby6ZIAuBnLUogVY6UxY-4TNb3Zy7iRCVi56UtpfkLg79LXbiTo97PnroSo96lvBS3FF/exec";
+        
         let recognition, isRecording = false, fullText = "", timerInterval, seconds = 0;
         let mediaRecorder, audioChunks = [], currentAudioBlob = null;
 
@@ -274,36 +275,27 @@
         function insertTimestamp() { const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); fullText += `\n\n[MARK: ${time}]\n`; document.getElementById('output').value = fullText; }
         function downloadAsWord() { const title = document.getElementById('session-title').value || 'Session'; const header = `BABRN ELITE REPORT\nREF: ${title}\nSTAFF: ${document.getElementById('session-prepared').value}\nDATE: ${document.getElementById('session-date').value}\n========================================\n\n`; const blob = new Blob(['\ufeff', header + document.getElementById('output').value], { type: 'application/msword' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `${title}.doc`; link.click(); }
 
+        // ORIGINAL SYNC LOGIC RESTORED
         async function syncToGoogle() { 
             const btn = document.getElementById('cloud-btn'); 
             const original = btn.innerHTML; 
             btn.innerHTML = '<i class="fas fa-sync fa-spin"></i> SYNCING'; 
 
-            let audioBase64 = "";
-            if (currentAudioBlob) {
-                audioBase64 = await new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.readAsDataURL(currentAudioBlob);
-                });
-            }
-
             const payload = { 
                 title: document.getElementById('session-title').value, 
                 staff: document.getElementById('session-prepared').value, 
                 text: document.getElementById('output').value, 
-                date: document.getElementById('session-date').value,
-                audio: audioBase64
+                date: document.getElementById('session-date').value 
             }; 
 
-            fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
-            .then(() => { 
+            fetch(SCRIPT_URL, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                body: JSON.stringify(payload) 
+            }).then(() => { 
                 btn.innerHTML = '<i class="fas fa-check text-emerald-600"></i> DONE'; 
                 setTimeout(() => btn.innerHTML = original, 2000); 
-            }).catch(() => {
-                alert("Large files may fail sync. Try shorter sessions.");
-                btn.innerHTML = original;
-            });
+            }); 
         }
         
         let db; const request = indexedDB.open("BABRN_GLASS_DB", 2);
@@ -354,9 +346,12 @@
 
                 const playerContainer = document.getElementById('audio-container');
                 const player = document.getElementById('audio-player');
+                
                 if (d.audio) {
                     player.src = URL.createObjectURL(d.audio);
                     playerContainer.classList.remove('hidden');
+                    player.playbackRate = 1;
+                    document.getElementById('playback-speed').value = "1";
                 } else {
                     playerContainer.classList.add('hidden');
                 }
