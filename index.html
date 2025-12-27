@@ -10,7 +10,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;500&display=swap');
         
         :root {
-            /* Velvet Glass Theme (Low Blue-Light / Soft Contrast) */
             --bg: #e2e8f0; 
             --glass: rgba(255, 255, 255, 0.4);
             --panel: rgba(255, 255, 255, 0.7);
@@ -60,7 +59,7 @@
             transition: background 0.4s ease;
         }
 
-        input {
+        input, select {
             background: var(--input-bg) !important;
             color: var(--text) !important;
             border: 1px solid var(--border) !important;
@@ -113,9 +112,25 @@
             
             <div class="col-span-12 lg:col-span-3 space-y-6">
                 <div class="glass-card p-8">
-                    <div class="text-center mb-10">
+                    <div class="text-center mb-6">
                         <span id="voice-status" class="text-[10px] font-black tracking-[0.4em] uppercase opacity-30">Standby</span>
                         <div id="timer" class="text-5xl font-light tracking-tighter mt-2 font-mono text-slate-500">00:00:00</div>
+                    </div>
+
+                    <div id="audio-container" class="hidden mb-6 p-4 bg-emerald-600/5 rounded-2xl border border-emerald-500/10">
+                        <label class="text-[9px] font-bold opacity-40 uppercase block mb-2 text-center">Session Playback</label>
+                        <audio id="audio-player" controls class="w-full h-8 mb-3"></audio>
+                        <div class="flex items-center justify-between px-1">
+                             <label class="text-[9px] font-bold opacity-60 uppercase">Speed</label>
+                             <select id="playback-speed" onchange="changeSpeed()" class="text-[10px] font-bold bg-transparent outline-none cursor-pointer rounded-lg px-2 py-1">
+                                 <option value="0.5">0.5x</option>
+                                 <option value="0.8">0.8x</option>
+                                 <option value="1" selected>Normal</option>
+                                 <option value="1.2">1.2x</option>
+                                 <option value="1.5">1.5x</option>
+                                 <option value="2">2x</option>
+                             </select>
+                        </div>
                     </div>
                     
                     <button id="start-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-5 rounded-2xl transition-all shadow-xl hover:-translate-y-1">
@@ -134,7 +149,7 @@
                             <i class="fas fa-file-word"></i> Word Report
                         </button>
                         <button onclick="syncToGoogle()" id="cloud-btn" class="w-full py-4 text-[10px] font-bold uppercase border border-slate-400/20 rounded-xl flex items-center justify-center gap-3 transition-all">
-                            <i class="fas fa-cloud"></i> Google Sheets
+                            <i class="fas fa-cloud"></i> Sync to Cloud
                         </button>
                     </div>
                 </div>
@@ -182,9 +197,9 @@
     </main>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby6ZIAuBnLUogVY6UxY-4TNb3Zy7iRCVi56UtpfkLg79LXbiTo97PnroSo96lvBS3FF/exec";
+        const SCRIPT_URL = "YOUR_GOOGLE_SCRIPT_URL_HERE";
         let recognition, isRecording = false, fullText = "", timerInterval, seconds = 0;
-        let mediaRecorder, audioChunks = [];
+        let mediaRecorder, audioChunks = [], currentAudioBlob = null;
 
         function toggleTheme() {
             document.body.classList.toggle('dark-mode');
@@ -192,13 +207,18 @@
             document.getElementById('theme-icon').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
         }
 
+        function changeSpeed() {
+            const player = document.getElementById('audio-player');
+            player.playbackRate = document.getElementById('playback-speed').value;
+        }
+
         async function setupRecorder() {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorder = new MediaRecorder(stream);
             mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
             mediaRecorder.onstop = () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                const audioUrl = URL.createObjectURL(audioBlob);
+                currentAudioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const audioUrl = URL.createObjectURL(currentAudioBlob);
                 const btn = document.getElementById('download-audio-btn');
                 btn.disabled = false; btn.classList.remove('opacity-30');
                 btn.classList.add('bg-emerald-600', 'text-white', 'shadow-lg');
@@ -231,11 +251,12 @@
 
         document.getElementById('start-btn').onclick = async () => {
             if (!mediaRecorder) await setupRecorder();
-            audioChunks = []; isRecording = true;
+            audioChunks = []; currentAudioBlob = null; isRecording = true;
             fullText = document.getElementById('output').value;
             recognition.start(); mediaRecorder.start(); startTimer();
             document.getElementById('start-btn').classList.add('hidden');
             document.getElementById('stop-btn').classList.remove('hidden');
+            document.getElementById('audio-container').classList.add('hidden');
         };
 
         document.getElementById('stop-btn').onclick = () => {
@@ -252,12 +273,61 @@
         function updateTimerUI() { let h = Math.floor(seconds/3600).toString().padStart(2,'0'), m = Math.floor((seconds%3600)/60).toString().padStart(2,'0'), s = (seconds%60).toString().padStart(2,'0'); document.getElementById('timer').innerText = `${h}:${m}:${s}`; }
         function insertTimestamp() { const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); fullText += `\n\n[MARK: ${time}]\n`; document.getElementById('output').value = fullText; }
         function downloadAsWord() { const title = document.getElementById('session-title').value || 'Session'; const header = `BABRN ELITE REPORT\nREF: ${title}\nSTAFF: ${document.getElementById('session-prepared').value}\nDATE: ${document.getElementById('session-date').value}\n========================================\n\n`; const blob = new Blob(['\ufeff', header + document.getElementById('output').value], { type: 'application/msword' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `${title}.doc`; link.click(); }
-        async function syncToGoogle() { const btn = document.getElementById('cloud-btn'); const original = btn.innerHTML; btn.innerHTML = '<i class="fas fa-sync fa-spin"></i> SYNCING'; const payload = { title: document.getElementById('session-title').value, staff: document.getElementById('session-prepared').value, text: document.getElementById('output').value, date: document.getElementById('session-date').value }; fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).then(() => { btn.innerHTML = '<i class="fas fa-check text-emerald-600"></i> DONE'; setTimeout(() => btn.innerHTML = original, 2000); }); }
+
+        async function syncToGoogle() { 
+            const btn = document.getElementById('cloud-btn'); 
+            const original = btn.innerHTML; 
+            btn.innerHTML = '<i class="fas fa-sync fa-spin"></i> SYNCING'; 
+
+            let audioBase64 = "";
+            if (currentAudioBlob) {
+                audioBase64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(currentAudioBlob);
+                });
+            }
+
+            const payload = { 
+                title: document.getElementById('session-title').value, 
+                staff: document.getElementById('session-prepared').value, 
+                text: document.getElementById('output').value, 
+                date: document.getElementById('session-date').value,
+                audio: audioBase64
+            }; 
+
+            fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+            .then(() => { 
+                btn.innerHTML = '<i class="fas fa-check text-emerald-600"></i> DONE'; 
+                setTimeout(() => btn.innerHTML = original, 2000); 
+            }).catch(() => {
+                alert("Large files may fail sync. Try shorter sessions.");
+                btn.innerHTML = original;
+            });
+        }
         
-        let db; const request = indexedDB.open("BABRN_GLASS_DB", 1);
-        request.onupgradeneeded = e => e.target.result.createObjectStore("sessions", { keyPath: "id" });
+        let db; const request = indexedDB.open("BABRN_GLASS_DB", 2);
+        request.onupgradeneeded = e => {
+            const database = e.target.result;
+            if (!database.objectStoreNames.contains("sessions")) {
+                database.createObjectStore("sessions", { keyPath: "id" });
+            }
+        };
         request.onsuccess = e => { db = e.target.result; document.getElementById('session-date').valueAsDate = new Date(); loadLibrary(); };
-        function saveToLocal() { const data = { id: Date.now(), title: document.getElementById('session-title').value || "Untitled", staff: document.getElementById('session-prepared').value || "N/A", date: document.getElementById('session-date').value, text: document.getElementById('output').value }; db.transaction("sessions", "readwrite").objectStore("sessions").add(data); loadLibrary(); }
+        
+        function saveToLocal() { 
+            const data = { 
+                id: Date.now(), 
+                title: document.getElementById('session-title').value || "Untitled", 
+                staff: document.getElementById('session-prepared').value || "N/A", 
+                date: document.getElementById('session-date').value, 
+                text: document.getElementById('output').value,
+                audio: currentAudioBlob 
+            }; 
+            db.transaction("sessions", "readwrite").objectStore("sessions").add(data); 
+            loadLibrary(); 
+        }
+
         function loadLibrary() {
             const list = document.getElementById('library-list'); list.innerHTML = "";
             db.transaction("sessions", "readonly").objectStore("sessions").openCursor(null, 'prev').onsuccess = (e) => {
@@ -270,7 +340,30 @@
                 }
             };
         }
-        function openEntry(id) { db.transaction("sessions", "readonly").objectStore("sessions").get(id).onsuccess = (e) => { const d = e.target.result; document.getElementById('output').value = d.text; document.getElementById('session-title').value = d.title; document.getElementById('session-prepared').value = d.staff; document.getElementById('session-date').value = d.date; fullText = d.text; updateWordCount(); switchTab('recorder'); }; }
+
+        function openEntry(id) { 
+            db.transaction("sessions", "readonly").objectStore("sessions").get(id).onsuccess = (e) => { 
+                const d = e.target.result; 
+                document.getElementById('output').value = d.text; 
+                document.getElementById('session-title').value = d.title; 
+                document.getElementById('session-prepared').value = d.staff; 
+                document.getElementById('session-date').value = d.date; 
+                fullText = d.text; 
+                currentAudioBlob = d.audio;
+                updateWordCount(); 
+
+                const playerContainer = document.getElementById('audio-container');
+                const player = document.getElementById('audio-player');
+                if (d.audio) {
+                    player.src = URL.createObjectURL(d.audio);
+                    playerContainer.classList.remove('hidden');
+                } else {
+                    playerContainer.classList.add('hidden');
+                }
+                switchTab('recorder'); 
+            }; 
+        }
+
         function deleteEntry(id) { if(confirm("Delete record?")) { db.transaction("sessions", "readwrite").objectStore("sessions").delete(id); loadLibrary(); } }
         function switchTab(t) { 
             document.getElementById('view-recorder').classList.toggle('hidden', t !== 'recorder'); 
@@ -282,4 +375,3 @@
     </script>
 </body>
 </html>
-
