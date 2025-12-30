@@ -2,140 +2,209 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BABRN Turbo Cloud</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BABRN Ultra-Fast Audio Archive</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        .safe-area-top { padding-top: env(safe-area-inset-top); background: #0f172a; }
-        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); background: white; }
-        .mobile-canvas { font-size: 16px; line-height: 1.6; border: none; resize: none; width: 100%; height: 100%; flex: 1; outline: none; padding: 20px; font-family: 'Courier New', monospace; }
-        .btn-active { color: #10b981 !important; border-top: 3px solid #10b981; }
-        .hidden { display: none !important; }
-        button { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto+Mono:wght@500&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #f1f5f9; color: #1e293b; }
+        .medical-canvas { font-family: 'Roboto Mono', monospace; background: white; line-height: 1.6; }
+        .active-tab { border-bottom: 4px solid #10b981; color: #10b981; font-weight: bold; }
+        .title-input-header { font-size: 1.5rem; font-weight: 800; border: none; background: #fffbeb; padding: 15px; width: 100%; border-radius: 12px; border-left: 6px solid #10b981; outline: none; }
+        .pulse-red { animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
+        @media print { .no-print { display: none !important; } }
+        input[type=range] { height: 6px; -webkit-appearance: none; width: 100%; background: #e2e8f0; border-radius: 5px; outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: #10b981; border-radius: 50%; cursor: pointer; border: 2px solid white; }
     </style>
 </head>
-<body>
+<body class="p-4">
 
-    <div class="safe-area-top shadow-lg">
-        <header class="p-4 flex justify-between items-center text-white">
+    <div class="max-w-7xl mx-auto">
+        <header class="no-print bg-[#0f172a] p-6 rounded-t-3xl text-white flex justify-between items-center shadow-2xl">
             <div>
-                <h1 class="text-lg font-bold tracking-tight text-emerald-400">BABRN <span class="text-white font-light">TURBO</span></h1>
-                <div id="recording-status" class="hidden flex items-center gap-1 text-[10px] font-bold text-red-500 animate-pulse">
-                    <i class="fas fa-circle"></i> LIVE
+                <h1 class="text-2xl font-bold uppercase tracking-tighter text-emerald-400">B.A.B.R.N. Turbo</h1>
+                <p class="text-[10px] opacity-70 uppercase tracking-widest text-slate-300">Fast-Speech Transcription & MoM</p>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div id="timer-container" class="hidden flex items-center gap-3 bg-slate-800 border border-slate-700 px-4 py-2 rounded-xl">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Duration</span>
+                    <span id="timer-display" class="font-mono text-xl text-emerald-400 font-bold">00:00:00</span>
+                </div>
+                <div id="recording-indicator" class="hidden flex items-center bg-red-600 px-4 py-2 rounded-full text-xs font-bold pulse-red">
+                    <span class="w-2 h-2 bg-white rounded-full mr-2"></span> LIVE
                 </div>
             </div>
-            <div id="timer-box" class="hidden bg-slate-800 px-3 py-1 rounded-full font-mono text-emerald-400 text-sm">00:00:00</div>
         </header>
+
+        <nav class="no-print bg-white border-b flex px-8 space-x-10 shadow-sm">
+            <button onclick="switchTab('recorder')" id="tab-recorder" class="py-5 active-tab uppercase text-xs font-bold tracking-widest">Editor</button>
+            <button onclick="switchTab('library')" id="tab-library" class="py-5 uppercase text-xs font-bold tracking-widest text-slate-400">Archives</button>
+        </nav>
+
+        <div class="mt-6">
+            <div id="view-recorder" class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                
+                <div class="no-print lg:col-span-1 space-y-4">
+                    <button onclick="prepareNewSession()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-md flex items-center justify-center gap-3">
+                        <i class="fas fa-plus"></i><span class="uppercase tracking-widest text-sm">New Session</span>
+                    </button>
+
+                    <div class="bg-white p-6 rounded-3xl shadow-md border border-slate-200">
+                        <div class="text-center mb-6">
+                            <div id="mic-icon" class="text-6xl text-slate-100 mb-2 transition-colors"><i class="fas fa-microphone"></i></div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">System Ready</p>
+                        </div>
+
+                        <button id="start-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-5 rounded-2xl mb-4 shadow-lg uppercase tracking-widest">Start Capture</button>
+                        <button id="stop-btn" class="hidden w-full bg-red-600 hover:bg-red-700 text-white font-bold py-5 rounded-2xl mb-4 shadow-lg uppercase tracking-widest">Stop & Save</button>
+                        
+                        <div class="border-t border-slate-100 pt-6">
+                            <audio id="review-player" controls class="w-full mb-3"></audio>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 mb-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Playback Speed</span>
+                                    <span id="speed-display" class="text-xs font-bold text-emerald-600">1.0x</span>
+                                </div>
+                                <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full">
+                            </div>
+                            <button id="download-btn" class="hidden w-full bg-slate-800 text-white py-3 rounded-xl text-[10px] font-bold uppercase">Download Audio</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-3">
+                    <div class="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden p-8">
+                        <input type="text" id="session-title" placeholder="MEETING TITLE..." class="title-input-header uppercase mb-6">
+
+                        <div class="no-print flex flex-wrap justify-between items-center gap-4 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="exportToWord()" class="text-[10px] font-bold px-3 py-2 rounded-lg bg-blue-600 text-white shadow-md hover:bg-blue-700">
+                                    <i class="fas fa-file-word mr-1"></i> MS Word
+                                </button>
+                                <button onclick="window.print()" class="text-[10px] font-bold px-3 py-2 rounded-lg bg-white border">PDF</button>
+                                <button onclick="insertTimestamp()" class="text-[10px] font-bold px-3 py-2 rounded-lg bg-blue-50 text-blue-600 border border-blue-200">Timestamp</button>
+                                <button onclick="cleanupText()" class="text-[10px] font-bold px-3 py-2 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200">Clean</button>
+                                <button onclick="generateMoMSummary()" class="text-[10px] font-bold px-3 py-2 rounded-lg bg-indigo-600 text-white shadow-md">Summarize (EN)</button>
+                            </div>
+                            <button onclick="updateCurrentEntry()" class="bg-slate-800 text-white px-6 py-2 rounded-xl text-xs font-bold uppercase hover:bg-black">Update Archive</button>
+                        </div>
+                        <textarea id="output" class="medical-canvas w-full h-[580px] text-lg focus:outline-none resize-none border-t pt-4" placeholder="Transcription..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-library" class="hidden no-print">
+                <div class="bg-white rounded-3xl shadow-xl p-10 border border-slate-200 min-h-[700px]">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-10 border-b pb-6 gap-6">
+                        <h2 class="text-2xl font-bold text-slate-800 uppercase tracking-tighter">Archive Library</h2>
+                        <input type="text" id="library-search" oninput="loadLibrary()" placeholder="Search..." class="w-full md:w-96 pl-6 py-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                    </div>
+                    <div id="library-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <main id="view-editor" class="flex-1 flex flex-col bg-white overflow-hidden">
-        <div class="px-2 py-2 bg-slate-50 border-b flex gap-2 overflow-x-auto whitespace-nowrap no-scrollbar shadow-sm">
-            <button onclick="syncToGoogleCloud()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md">
-                <i class="fas fa-cloud-upload-alt mr-1"></i> CLOUD SYNC
-            </button>
-            <button onclick="exportToWord()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md">
-                <i class="fas fa-file-word mr-1"></i> MS WORD
-            </button>
-            <button onclick="generateMoMSummary()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold">MOM</button>
-            <button onclick="cleanupText()" class="bg-white border px-3 py-2 rounded-lg text-xs font-bold text-slate-600">CLEAN</button>
-        </div>
-        
-        <input type="text" id="session-title" placeholder="MEETING TITLE..." class="p-4 font-bold text-slate-700 bg-emerald-50/30 outline-none border-b uppercase tracking-tighter">
-        <textarea id="output" class="mobile-canvas" placeholder="Tap START to transcribe Taglish/English..."></textarea>
-        
-        <div class="p-4 flex gap-3 bg-white border-t shadow-inner">
-            <button id="start-btn" class="flex-1 bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-all uppercase tracking-widest text-sm">Start Capture</button>
-            <button id="stop-btn" class="hidden flex-1 bg-red-600 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-all uppercase tracking-widest text-sm">Stop & Save</button>
-        </div>
-    </main>
-
-    <main id="view-archives" class="flex-1 hidden bg-slate-100 overflow-y-auto p-4">
-        <div id="library-list" class="space-y-3"></div>
-    </main>
-
-    <nav class="safe-area-bottom border-t flex justify-around items-center">
-        <button onclick="switchTab('editor')" id="nav-editor" class="flex-1 py-3 text-slate-400 text-xs font-bold btn-active">
-            <i class="fas fa-keyboard text-lg block mb-1"></i> RECORDER
-        </button>
-        <button onclick="switchTab('archives')" id="nav-archives" class="flex-1 py-3 text-slate-400 text-xs font-bold">
-            <i class="fas fa-folder-open text-lg block mb-1"></i> ARCHIVES
-        </button>
-    </nav>
-
     <script>
+        // Keep all previous logic for DB, Transcription, and Timer
         let db, mediaRecorder, chunks = [], finalTranscript = "", currentEntryId = null;
-        let isRecording = false, timerInterval, startTime, wakeLock = null;
+        let isRecording = false, timerInterval, startTime;
 
-        // INDEXED DB SETUP
         const request = indexedDB.open("BABRN_Turbo_V1", 1);
         request.onupgradeneeded = e => e.target.result.createObjectStore("sessions", { keyPath: "id" });
         request.onsuccess = e => db = e.target.result;
 
         const output = document.getElementById('output');
         const sessionTitle = document.getElementById('session-title');
+        const reviewPlayer = document.getElementById('review-player');
+        const speedSlider = document.getElementById('speed-slider');
         const startBtn = document.getElementById('start-btn');
         const stopBtn = document.getElementById('stop-btn');
-        const timerBox = document.getElementById('timer-box');
+        const timerContainer = document.getElementById('timer-container');
+        const timerDisplay = document.getElementById('timer-display');
 
-        // PREVENT SCREEN SLEEP
-        async function requestWakeLock() {
-            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } 
-            catch (err) { console.log("WakeLock Disabled"); }
-        }
-
-        // GOOGLE CLOUD SYNC (Using your provided URL)
-        async function syncToGoogleCloud() {
-            const scriptURL = 'https://script.google.com/macros/s/AKfycby6ZIAuBnLUogVY6UxY-4TNb3Zy7iRCVi56UtpfkLg79LXbiTo97PnroSo96lvBS3FF/exec';
-            const data = {
-                title: sessionTitle.value || "Untitled_Meeting",
-                content: output.value,
-                date: new Date().toLocaleString()
-            };
-
-            if(!data.content) return alert("Nothing to sync!");
-
-            try {
-                // Sent to your Google App Script
-                await fetch(scriptURL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify(data)
-                });
-                alert("☁️ Synced to Google Drive!");
-            } catch (e) { alert("Sync failed. Check connection."); }
-        }
-
-        // MS WORD EXPORT WITH TABLE
+        // WORD EXPORT WITH TABLE LOGIC
         function exportToWord() {
             const title = sessionTitle.value || "Meeting_Notes";
             const content = output.value;
+            
+            // Generate the Word-compatible HTML with a Table
             const html = `
                 <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-                <head><meta charset='utf-8'><style>
-                    body { font-family: 'Calibri', sans-serif; }
-                    .h1 { color: #10b981; font-size: 20pt; font-weight: bold; }
-                    table { border-collapse: collapse; width: 100%; border: 1px solid #ddd; }
-                    th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
-                </style></head>
+                <head><meta charset='utf-8'>
+                <style>
+                    body { font-family: 'Calibri', sans-serif; line-height: 1.5; }
+                    .header-box { background-color: #f8f9fa; padding: 20px; border-left: 5px solid #10b981; }
+                    h1 { color: #1e293b; font-size: 22pt; margin: 0; }
+                    .metadata { color: #64748b; font-size: 9pt; margin-top: 5px; }
+                    h2 { color: #10b981; font-size: 16pt; border-bottom: 1px solid #e2e8f0; margin-top: 25px; }
+                    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+                    th { background-color: #1e293b; color: #ffffff; padding: 10px; text-align: left; border: 1px solid #dddddd; }
+                    td { padding: 10px; border: 1px solid #dddddd; }
+                    .transcript-box { font-family: 'Courier New', monospace; background: #fafafa; padding: 15px; border: 1px solid #eeeeee; margin-top: 20px; font-size: 10pt; }
+                </style>
+                </head>
                 <body>
-                    <div class="h1">${title.toUpperCase()}</div>
-                    <p>Date: ${new Date().toLocaleString()}</p>
-                    <hr>
-                    <h3>ACTION ITEMS</h3>
-                    <table><tr><th>Task</th><th>Assignee</th><th>Status</th></tr><tr><td>-</td><td></td><td></td></tr></table>
-                    <h3>TRANSCRIPT</h3>
-                    <p>${content.replace(/\n/g, '<br>')}</p>
-                </body></html>`;
+                    <div class="header-box">
+                        <h1>${title.toUpperCase()}</h1>
+                        <div class="metadata">Official Document Generated: ${new Date().toLocaleString()}</div>
+                    </div>
+
+                    <h2>1. KEY ACTION ITEMS</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th width="60%">TASKS / ACTION REQUIRED</th>
+                                <th width="20%">ASSIGNEE</th>
+                                <th width="20%">DEADLINE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>- </td><td></td><td></td></tr>
+                            <tr><td>- </td><td></td><td></td></tr>
+                            <tr><td>- </td><td></td><td></td></tr>
+                        </tbody>
+                    </table>
+
+                    <h2>2. FULL TRANSCRIPTION</h2>
+                    <div class="transcript-box">${content.replace(/\n/g, '<br>')}</div>
+                </body>
+                </html>
+            `;
 
             const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `${title}.doc`; a.click();
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${title.replace(/\s+/g, '_')}.doc`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
-        // SPEECH ENGINE (Optimized for Taglish fil-PH)
+        // TIMER LOGIC
+        function runTimer() {
+            startTime = Date.now();
+            timerContainer.classList.remove('hidden');
+            timerInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const h = Math.floor(elapsed / 3600000).toString().padStart(2, '0');
+                const m = Math.floor((elapsed % 3600000) / 60000).toString().padStart(2, '0');
+                const s = Math.floor((elapsed % 60000) / 1000).toString().padStart(2, '0');
+                timerDisplay.innerText = `${h}:${m}:${s}`;
+            }, 1000);
+        }
+
+        function resetTimer() { clearInterval(timerInterval); timerContainer.classList.add('hidden'); }
+
+        speedSlider.addEventListener('input', () => {
+            reviewPlayer.playbackRate = speedSlider.value;
+            document.getElementById('speed-display').innerText = speedSlider.value + "x";
+        });
+
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
@@ -148,32 +217,28 @@
                 mediaRecorder = new MediaRecorder(stream);
                 chunks = [];
                 mediaRecorder.ondataavailable = e => chunks.push(e.data);
-                mediaRecorder.onstop = () => saveToDB(new Blob(chunks, { type: 'audio/webm' }));
-                
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'audio/webm' });
+                    saveToDB(blob);
+                };
                 mediaRecorder.start();
                 recognition.start();
-                await requestWakeLock();
-                
+                runTimer();
                 isRecording = true;
-                startTime = Date.now();
                 startBtn.classList.add('hidden');
                 stopBtn.classList.remove('hidden');
-                document.getElementById('recording-status').classList.remove('hidden');
-                timerBox.classList.remove('hidden');
-                
-                timerInterval = setInterval(updateTimer, 1000);
-            } catch(e) { alert("Please allow microphone access."); }
+                document.getElementById('recording-indicator').classList.remove('hidden');
+            } catch(e) { alert("Mic Access Denied"); }
         };
 
         stopBtn.onclick = () => {
             isRecording = false;
             mediaRecorder.stop();
             recognition.stop();
-            if(wakeLock) wakeLock.release();
-            stopBtn.classList.add('hidden');
+            resetTimer();
             startBtn.classList.remove('hidden');
-            document.getElementById('recording-status').classList.add('hidden');
-            clearInterval(timerInterval);
+            stopBtn.classList.add('hidden');
+            document.getElementById('recording-indicator').classList.add('hidden');
         };
 
         recognition.onresult = (e) => {
@@ -186,31 +251,56 @@
             output.scrollTop = output.scrollHeight;
         };
 
-        recognition.onend = () => { if(isRecording) recognition.start(); };
+        recognition.onend = () => { if (isRecording) recognition.start(); };
 
-        function updateTimer() {
-            const elapsed = Date.now() - startTime;
-            const h = Math.floor(elapsed / 3600000).toString().padStart(2,'0');
-            const m = Math.floor((elapsed % 3600000) / 60000).toString().padStart(2,'0');
-            const s = Math.floor((elapsed % 60000) / 1000).toString().padStart(2,'0');
-            timerBox.innerText = `${h}:${m}:${s}`;
+        async function generateMoMSummary() {
+            const text = output.value.trim();
+            if(!text) return;
+            const template = `--- MINUTES OF MEETING ---\nTITLE: ${sessionTitle.value.toUpperCase()}\nDATE: ${new Date().toLocaleDateString()}\n\n1. ATTENDEES:\n\n2. KEY DECISIONS:\n\n3. ACTION ITEMS:\n\n------------------\n\n`;
+            navigator.clipboard.writeText(`Please summarize this transcript into English MoM:\n\n${text}`);
+            output.value = template + text;
+            alert("MoM Template Applied & AI Prompt Copied!");
+        }
+
+        function cleanupText() {
+            const fillers = /\b(uhm|uh|ah|basically|actually|like|parang|ano|so|yung|na|wait|tapos)\b/gi;
+            output.value = output.value.replace(fillers, "").replace(/\s\s+/g, ' ').trim();
+            finalTranscript = output.value;
+        }
+
+        function insertTimestamp() {
+            output.setRangeText(`\n[${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}] `, output.selectionStart, output.selectionEnd, 'end');
         }
 
         function saveToDB(blob) {
             const id = Date.now();
             const tx = db.transaction("sessions", "readwrite");
             tx.objectStore("sessions").add({ id, title: sessionTitle.value || "Untitled", date: new Date().toLocaleString(), text: output.value, media: blob });
+            currentEntryId = id;
+            reviewPlayer.src = URL.createObjectURL(blob);
+            document.getElementById('download-btn').classList.remove('hidden');
+        }
+
+        function updateCurrentEntry() {
+            if (!currentEntryId) return;
+            const tx = db.transaction("sessions", "readwrite");
+            const store = tx.objectStore("sessions");
+            store.get(currentEntryId).onsuccess = (e) => {
+                const data = e.target.result;
+                data.text = output.value;
+                data.title = sessionTitle.value;
+                store.put(data);
+                alert("Archive Updated!");
+            };
         }
 
         function switchTab(tab) {
-            document.getElementById('view-editor').classList.toggle('hidden', tab !== 'editor');
-            document.getElementById('view-archives').classList.toggle('hidden', tab !== 'archives');
-            document.getElementById('nav-editor').classList.toggle('btn-active', tab === 'editor');
-            document.getElementById('nav-archives').classList.toggle('btn-active', tab === 'archives');
-            if(tab === 'archives') loadArchives();
+            document.getElementById('view-recorder').classList.toggle('hidden', tab !== 'recorder');
+            document.getElementById('view-library').classList.toggle('hidden', tab !== 'library');
+            if(tab === 'library') loadLibrary();
         }
 
-        function loadArchives() {
+        function loadLibrary() {
             const list = document.getElementById('library-list');
             list.innerHTML = "";
             db.transaction("sessions", "readonly").objectStore("sessions").openCursor(null, 'prev').onsuccess = (e) => {
@@ -218,37 +308,32 @@
                 if (cursor) {
                     const doc = cursor.value;
                     const div = document.createElement('div');
-                    div.className = "bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-3";
-                    div.innerHTML = `<p class="text-[10px] text-indigo-500 font-bold uppercase">${doc.date}</p>
-                                     <h3 class="font-bold text-slate-800 mb-3">${doc.title}</h3>
-                                     <div class="flex gap-2">
-                                        <button onclick="openEditor(${doc.id})" class="flex-1 bg-slate-100 py-2 rounded-lg text-xs font-bold">VIEW</button>
-                                        <button onclick="deleteDoc(${doc.id})" class="px-4 text-red-500"><i class="fas fa-trash"></i></button>
-                                     </div>`;
+                    div.className = "bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between";
+                    div.innerHTML = `
+                        <div><p class="text-[9px] font-bold text-indigo-600 mb-1">${doc.date}</p><h3 class="text-xs font-bold text-slate-800 mb-4 truncate uppercase">${doc.title}</h3></div>
+                        <div class="flex gap-2">
+                            <button onclick="openInEditor(${doc.id})" class="flex-1 bg-slate-100 py-2 rounded-lg text-[10px] font-bold uppercase hover:bg-emerald-500 hover:text-white transition-all">Open</button>
+                            <button onclick="deleteEntry(${doc.id})" class="px-3 py-2 text-red-400 hover:text-red-600 border border-transparent hover:border-red-100 rounded-lg"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `;
                     list.appendChild(div);
                     cursor.continue();
                 }
             };
         }
 
-        function openEditor(id) {
+        function openInEditor(id) {
             db.transaction("sessions", "readonly").objectStore("sessions").get(id).onsuccess = (e) => {
                 const doc = e.target.result;
-                output.value = doc.text; sessionTitle.value = doc.title; switchTab('editor');
+                output.value = doc.text; sessionTitle.value = doc.title; currentEntryId = id;
+                reviewPlayer.src = URL.createObjectURL(doc.media); 
+                document.getElementById('download-btn').classList.remove('hidden');
+                switchTab('recorder');
             };
         }
 
-        function cleanupText() {
-            output.value = output.value.replace(/\b(uhm|ah|parang|ano|so|yung|like)\b/gi, "").replace(/\s\s+/g, ' ').trim();
-            finalTranscript = output.value;
-        }
-
-        async function generateMoMSummary() {
-            const template = `--- MINUTES OF MEETING ---\nTITLE: ${sessionTitle.value}\nDATE: ${new Date().toLocaleDateString()}\n\n1. KEY DECISIONS:\n\n2. ACTION ITEMS (Who/What/When):\n\n--- TRANSCRIPT BELOW ---\n\n`;
-            output.value = template + output.value;
-        }
-
-        function deleteDoc(id) { if(confirm("Delete this archive?")) { db.transaction("sessions","readwrite").objectStore("sessions").delete(id).oncomplete = loadArchives; } }
+        function deleteEntry(id) { if(confirm("Delete permanently?")) { const tx = db.transaction("sessions", "readwrite"); tx.objectStore("sessions").delete(id); tx.oncomplete = () => loadLibrary(); } }
+        function prepareNewSession() { if(confirm("Start fresh?")) location.reload(); }
     </script>
 </body>
 </html>
